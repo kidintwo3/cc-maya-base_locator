@@ -56,6 +56,8 @@ public:
 	BaseLoc();
 	virtual ~BaseLoc();
 
+	virtual void			postConstructor();
+
 	virtual MStatus   		compute( const MPlug& plug, MDataBlock& data );
 
 	virtual void            draw( M3dView & view, const MDagPath & path, M3dView::DisplayStyle style, M3dView::DisplayStatus status );
@@ -133,7 +135,7 @@ public:
     static MObject		aInLocPosB;
     
     
-	static MObject      aTime;
+	//static MObject      aTime;
 
 private:
 	MMatrix				m_modelViewMat;
@@ -262,11 +264,16 @@ public:
 
 	static void draw(const MHWRender::MDrawContext& context, const MUserData* data) {};
 
+protected:
+	MBoundingBox mCurrentBoundingBox;
+
 private:
 
-	MMatrix m_modelViewMat;
 
 	BaseLocOverride(const MObject& obj);
+
+
+	MMatrix m_modelViewMat;
 	MPoint m_bbCorner1;
 	MPoint m_bbCorner2;
 

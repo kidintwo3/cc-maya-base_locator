@@ -118,13 +118,16 @@ MStatus BaseLocCommand::doIt( const MArgList& argList )
 
 	// Create locator
 	o_baseLocNode = m_DEPNode.create("BaseLoc");
-
 	MFnDependencyNode fnDepTrg( o_baseLocNode );
-	fnDepTrg.setName( s_locName );
-	MPxCommand::setResult(fnDepTrg.name());
 
+	// Rename it
+	if (argData.isFlagSet( "-name" ))
+	{
+		fnDepTrg.setName( s_locName );
+		MPxCommand::setResult(fnDepTrg.name());
 
-	//MGlobal::displayInfo(MString() + "[BaseLocNode] Locator rgb: " + r + "," + g + "," + b);
+	}
+
 
 	// Set plugs
 	MDagPath dag_LocATr;

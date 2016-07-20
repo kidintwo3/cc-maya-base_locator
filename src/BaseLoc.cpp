@@ -78,7 +78,7 @@ MObject		BaseLoc::aFontFaceName;
 MObject		BaseLoc::aInLocPosA;
 MObject		BaseLoc::aInLocPosB;
 
-MObject		BaseLoc::aTime;
+//MObject		BaseLoc::aTime;
 
 MString		BaseLoc::drawDbClassification("drawdb/geometry/BaseLoc");
 MString		BaseLoc::drawRegistrantId("BaseLocPlugin");
@@ -89,6 +89,12 @@ MStringArray BaseLocData::m_fFontList;
 
 BaseLoc::BaseLoc() {}
 BaseLoc::~BaseLoc() {}
+
+void BaseLoc::postConstructor()
+{
+	MFnDependencyNode nodeFn(thisMObject());
+	nodeFn.setName("BaseLocShape#");
+}
 
 void* BaseLoc::creator() { return new BaseLoc(); }
 
@@ -111,6 +117,10 @@ MStatus BaseLoc::compute( const MPlug& /*plug*/, MDataBlock& /*data*/ )
 void BaseLoc::draw( M3dView & view, const MDagPath & /*path*/, M3dView::DisplayStyle style,  M3dView::DisplayStatus status )
 {
 
+
+
+#if MAYA_API_VERSION < 201600
+
 	// Get ID
 
 	MObject thisNode = thisMObject();
@@ -126,10 +136,10 @@ void BaseLoc::draw( M3dView & view, const MDagPath & /*path*/, M3dView::DisplayS
 	m_modelViewMat = MMatrix();
 	view.modelViewMatrix(m_modelViewMat);
 
-	// Get time
-	p = MPlug(thisNode, aTime);
-	MTime currentTime;
-	p.getValue(currentTime);
+	//// Get time
+	//p = MPlug(thisNode, aTime);
+	//MTime currentTime;
+	//p.getValue(currentTime);
 
 
 	// Get input Locator Matricies
@@ -929,6 +939,8 @@ void BaseLoc::draw( M3dView & view, const MDagPath & /*path*/, M3dView::DisplayS
 
 	}
 	view.endGL();
+
+#endif
 }
 
 bool BaseLoc::isBounded() const
@@ -938,7 +950,6 @@ bool BaseLoc::isBounded() const
 
 MBoundingBox BaseLoc::boundingBox() const
 {
-
 
 	// Get the size
 	MObject thisNode = thisMObject();
@@ -1136,10 +1147,12 @@ MBoundingBox BaseLoc::boundingBox() const
 		corner2 += offV;
 	}
 
-	//MGlobal::executeCommand(MString() + "spaceLocator -p " + corner1.x + " " + corner1.y + " " + corner1.z);
-	//MGlobal::executeCommand(MString() + "spaceLocator -p " + corner2.x + " " + corner2.y + " " + corner2.z);
+
 
 	return MBoundingBox( corner1, corner2 );
+
+
+
 
 
 }
@@ -1390,31 +1403,6 @@ MUserData* BaseLocOverride::prepareForDraw( const MDagPath& objPath, const MDagP
 
 
 
-	//MFnDependencyNode fnD(o_BaseLocNode);
-	//MPlug p_outlineCol = fnD.findPlug("outlinerColor");
-	//MPlug p_useOutlineCol = fnD.findPlug("useOutlinerColor");
-
-	//p_useOutlineCol.setBool(true);
-
-	//MObject color;
-	//MFnNumericData numData;
-	//color = numData.create( MFnNumericData::k3Double );
-	//numData.setData3Double( 0.08,0.6,0.6 );  p_outlineCol.setValue(color);
-
-	//MDagPath currP = objPath;
-	//currP.pop();
-
-	//MFnDagNode fnNode(o_BaseLocNode, &status );
-	//MObject baseTransformNode = fnNode.parent(0);
-	//MFnDagNode fnNodeTr(baseTransformNode);
-	//MPlug p_outlineCol1 = fnNodeTr.findPlug("outlinerColor");
-	//MPlug p_useOutlineCol1 = fnNodeTr.findPlug("useOutlinerColor");
-	//p_useOutlineCol1.setBool(true);
-	//color = numData.create( MFnNumericData::k3Double );
-	//numData.setData3Double( 0.08,0.6,0.6 );  p_outlineCol1.setValue(color);
-
-
-
 	BaseLocData* data = dynamic_cast<BaseLocData*>(oldData);
 	if (!data)
 	{
@@ -1461,11 +1449,11 @@ MUserData* BaseLocOverride::prepareForDraw( const MDagPath& objPath, const MDagP
 		p = MPlug(o_BaseLocNode, BaseLoc::localPositionZ);
 		p.getValue(data->m_localPosZ);
 
-		// Get time
-		p = MPlug(o_BaseLocNode, BaseLoc::aTime);
-		MTime currentTime;
-		p.getValue(currentTime);
-		data->m_inTime = currentTime.value();
+		//// Get time
+		//p = MPlug(o_BaseLocNode, BaseLoc::aTime);
+		//MTime currentTime;
+		//p.getValue(currentTime);
+		//data->m_inTime = currentTime.value();
 
 
 		// Get offsetX
@@ -1735,8 +1723,8 @@ MUserData* BaseLocOverride::prepareForDraw( const MDagPath& objPath, const MDagP
 
 
 
-	// Icon + Camera
-	if (data->m_drawPresets == 6 || data->m_drawPresets == 8)
+	// Icon + Camera + Box
+	if (data->m_drawPresets == 6 || data->m_drawPresets == 8 || data->m_drawPresets == 1)
 	{
 
 
@@ -1768,7 +1756,11 @@ MUserData* BaseLocOverride::prepareForDraw( const MDagPath& objPath, const MDagP
 		if (data->m_drawIconType == 25){ m_locPointsNum = 56; m_locTrianglesNum = 180;tmpA.setLength(m_locPointsNum);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(m_locmuzzleflashPoints[i][0]  , m_locmuzzleflashPoints[i][1]  , m_locmuzzleflashPoints[i][2])*r*rM + offV, i); }}
 		if (data->m_drawIconType == 26){ m_locPointsNum = 49; m_locTrianglesNum = 138;tmpA.setLength(m_locPointsNum);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(m_locOrientPoints[i][0]  , m_locOrientPoints[i][1]  , m_locOrientPoints[i][2])*r*rM + offV, i); }}
 
+		// camera
 		if (data->m_drawPresets == 8){ tmpA.clear(); m_locPointsNum = 69; m_locTrianglesNum = 378; tmpA.setLength(m_locPointsNum);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(m_CameraPoints[i][0]  , m_CameraPoints[i][1]  , m_CameraPoints[i][2])*r*rM + offV, i); }}
+
+		// box
+		if (data->m_drawPresets == 1){ tmpA.clear(); m_locPointsNum = 20; m_locTrianglesNum = 36; tmpA.setLength(m_locPointsNum);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(m_locBoxPoints[i][0]  , m_locBoxPoints[i][1]  , m_locBoxPoints[i][2])*r*rM + offV, i); }}
 
 
 		// Calculate Outline points with breaks
@@ -1862,6 +1854,8 @@ MUserData* BaseLocOverride::prepareForDraw( const MDagPath& objPath, const MDagP
 
 
 
+
+
 	// Circle
 	if (data->m_drawPresets == 0)
 	{
@@ -1910,8 +1904,18 @@ MUserData* BaseLocOverride::prepareForDraw( const MDagPath& objPath, const MDagP
 	// Box
 	if (data->m_drawPresets == 1)
 	{
-		data->m_locDrawPoints.clear();
+
+		
+
 		data->m_locDrawTriangles.clear();
+
+		for (int i = 0; i < m_locTrianglesNum; i++)
+		{
+			data->m_locDrawTriangles.append(MPoint(m_locBoxTriangles[i][0]*r , m_locBoxTriangles[i][1]*r , m_locBoxTriangles[i][2]*r )*rM + offV);
+		}
+
+
+
 	}
 
 	// Sphere
@@ -2092,13 +2096,9 @@ MUserData* BaseLocOverride::prepareForDraw( const MDagPath& objPath, const MDagP
 	return data;
 }
 
-// addUIDrawables() provides access to the MUIDrawManager, which can be used
-// to queue up operations for drawing simple UI elements such as lines, circles and
-// text. To enable addUIDrawables(), override hasUIDrawables() and make it return true.
+
 void BaseLocOverride::addUIDrawables( const MDagPath& objPath, MHWRender::MUIDrawManager& drawManager, const MHWRender::MFrameContext& frameContext, const MUserData* data)
 {
-	// Get data cached by prepareForDraw() for each drawable instance, then MUIDrawManager 
-	// can draw simple UI by these data.
 	BaseLocData* pLocatorData = (BaseLocData*)data;
 	if (!pLocatorData)
 	{
@@ -2309,25 +2309,22 @@ void BaseLocOverride::addUIDrawables( const MDagPath& objPath, MHWRender::MUIDra
 		if (pLocatorData->m_drawPresets == 1)
 		{
 
-
-
-			MVector vU(0.0,1.0,0.0);
-			MVector vR(1.0,0.0,0.0);
-
-			vU *= pLocatorData->m_rotMatrix;
-			vR *= pLocatorData->m_rotMatrix;
-			center *= pLocatorData->m_rotMatrix;
-
-			center += offV;
-
 			// Draw fill
 			drawManager.setColor( fillCol );
-			drawManager.box(center, vU, vR, r * pLocatorData->m_scaleX, r * pLocatorData->m_scaleY, r * pLocatorData->m_scaleZ, true );  
+			drawManager.mesh(MHWRender::MUIDrawManager::kTriangles, pLocatorData->m_locDrawTriangles);
 
 			// Draw outline
 			drawManager.setColor( lineCol );
 			drawManager.setLineWidth(pLocatorData->m_lineWidth);
-			drawManager.box(center, vU, vR, r * pLocatorData->m_scaleX, r * pLocatorData->m_scaleY, r * pLocatorData->m_scaleZ, false );  
+
+
+			for (int i = 0; i < pLocatorData->m_locDrawPointsA.size(); i++)
+			{
+				drawManager.mesh(MHWRender::MUIDrawManager::kLineStrip,  pLocatorData->m_locDrawPointsA[i]);
+			}
+
+
+
 		}
 
 
@@ -3139,10 +3136,10 @@ MStatus BaseLoc::initialize()
 	mAttr.setKeyable(false);
 	addAttribute( aInLocPosB );
 
-	aTime = uAttr.create("time", "time", MFnUnitAttribute::kTime, 0.0);
-	uAttr.setWritable(true);
-	uAttr.setReadable(false);
-	addAttribute(aTime);
+	//aTime = uAttr.create("time", "time", MFnUnitAttribute::kTime, 0.0);
+	//uAttr.setWritable(true);
+	//uAttr.setReadable(false);
+	//addAttribute(aTime);
 
 
 	return MS::kSuccess;
