@@ -35,6 +35,10 @@ MStatus initializePlugin( MObject obj )
 	CHECK_MSTATUS_AND_RETURN_IT(status);
 
 
+	BaseLoc::aPluginLoadPath = fnPlugin.loadPath(&status);
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+
+
 	return MS::kSuccess;
 }
 

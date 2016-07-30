@@ -58,12 +58,18 @@ global proc AEBaseLocTemplate( string $nodeName )
 	editorTemplate -beginLayout "Misc" -collapse 0;
 	editorTemplate -addControl "locID";
 	editorTemplate -endLayout;
+	
+	editorTemplate -beginLayout "Plug-in Info" -collapse 0;
+	editorTemplate -addControl "presetFolderPath";
+	editorTemplate -endLayout;
 
 	editorTemplate -suppress "division";
 	editorTemplate -suppress "displayCards";
 	editorTemplate -suppress "fadeByDistance";
 	editorTemplate -suppress "fadeDistance";
 	editorTemplate -suppress "locatorPos";
+	editorTemplate -suppress "inPointArray";
+	editorTemplate -suppress "inTriangleArray";
 
 	AEdependNodeTemplate $nodeName;
 

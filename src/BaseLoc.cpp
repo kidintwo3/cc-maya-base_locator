@@ -78,7 +78,11 @@ MObject		BaseLoc::aFontFaceName;
 MObject		BaseLoc::aInLocPosA;
 MObject		BaseLoc::aInLocPosB;
 
-//MObject		BaseLoc::aTime;
+MObject		BaseLoc::aPresetFolderPath;
+MString     BaseLoc::aPluginLoadPath;
+
+MObject		BaseLoc::aInPointArray;
+MObject		BaseLoc::aInTriangleArray;
 
 MString		BaseLoc::drawDbClassification("drawdb/geometry/BaseLoc");
 MString		BaseLoc::drawRegistrantId("BaseLocPlugin");
@@ -94,6 +98,11 @@ void BaseLoc::postConstructor()
 {
 	MFnDependencyNode nodeFn(thisMObject());
 	nodeFn.setName("BaseLocShape#");
+
+	m_fileInitialized = false;
+
+	// Check preset folder
+	BaseLoc::checkPresetFolder();
 }
 
 void* BaseLoc::creator() { return new BaseLoc(); }
@@ -105,12 +114,86 @@ BaseLocOverride::~BaseLocOverride(){}
 
 // VP 1.0 functions
 
-MStatus BaseLoc::compute( const MPlug& /*plug*/, MDataBlock& /*data*/ )
+
+MStatus BaseLoc::checkPresetFolder()
+{
+	MString s_path = BaseLoc::aPluginLoadPath + "/pBaseLoc.cfg";
+
+
+	s_readPluginPath.clear();
+
+	if (ifstream(s_path.asChar())) // If "pBaseLoc.cfg" exists
+	{
+		string line;
+
+		ifstream myfile (s_path.asChar());
+		if (myfile.is_open())
+		{
+			while ( getline (myfile,line) )
+			{
+				istringstream iss(line);
+				s_readPluginPath = line.c_str();
+			}
+
+			myfile.close();
+
+			MGlobal::displayInfo(MString() + "[BaseLoc] pBaseLoc.cfg path: " + s_readPluginPath );
+			o_presetPath.setRawFullName(s_readPluginPath);
+
+
+
+		}
+
+		if (s_readPluginPath.length() == 0) {
+
+			MGlobal::displayWarning(MString() + "[BaseLoc] pBaseLoc.cfg is empty!" );
+		}
+
+		return MStatus::kSuccess;
+	}
+
+
+
+	else // If "pBaseLoc.cfg" does not exist
+	{
+
+		ofstream fout(s_path.asChar());
+		MGlobal::displayInfo(MString() + "[BaseLoc] Writing default pBaseLoc.cfg to folder: " + s_path);
+
+		MString s_path = BaseLoc::aPluginLoadPath + "/";
+
+		fout << s_path.asChar();
+
+		s_readPluginPath = s_path;
+
+
+		return MStatus::kSuccess;
+
+
+	}
+
+
+
+	return MStatus::kSuccess;
+}
+
+
+
+
+MStatus BaseLoc::compute( const MPlug& plug, MDataBlock& data )
 {
 
+	MStatus status;
 
+	MDataHandle h_outPresetPath = data.outputValue(aPresetFolderPath, &status);
+	CHECK_MSTATUS_AND_RETURN_IT(status);
 
-	return MS::kUnknownParameter;
+	if (s_readPluginPath.length() != 0)
+	{
+		h_outPresetPath.setString(s_readPluginPath);
+	}
+
+	return MS::kSuccess;
 }
 
 
@@ -1413,8 +1496,25 @@ MUserData* BaseLocOverride::prepareForDraw( const MDagPath& objPath, const MDagP
 	MPlug p,c;
 	MObject o;
 
+	MPointArray inPointArray;
+	MPointArray inTriangleArray;
+
 	if (status)
 	{
+
+		// Get input point array
+		p = MPlug(o_BaseLocNode, BaseLoc::aInPointArray);
+		MObject o_inPointArray;
+		p.getValue(o_inPointArray);
+		MFnPointArrayData fn_aPoints(o_inPointArray);
+		fn_aPoints.copyTo(inPointArray);
+
+		// Get input point array
+		p = MPlug(o_BaseLocNode, BaseLoc::aInTriangleArray);
+		MObject o_inTriangleArray;
+		p.getValue(o_inTriangleArray);
+		MFnPointArrayData fn_aTriangles(o_inTriangleArray);
+		fn_aTriangles.copyTo(inTriangleArray);
 
 		// Get input Locator Matricies
 		p = MPlug(o_BaseLocNode, BaseLoc::aInLocPosA);
@@ -1724,7 +1824,7 @@ MUserData* BaseLocOverride::prepareForDraw( const MDagPath& objPath, const MDagP
 
 
 	// Icon + Camera + Box
-	if (data->m_drawPresets == 6 || data->m_drawPresets == 8 || data->m_drawPresets == 1)
+	if (data->m_drawPresets == 6 || data->m_drawPresets == 8 || data->m_drawPresets == 1 || data->m_drawPresets == 11)
 	{
 
 
@@ -1762,6 +1862,10 @@ MUserData* BaseLocOverride::prepareForDraw( const MDagPath& objPath, const MDagP
 		// box
 		if (data->m_drawPresets == 1){ tmpA.clear(); m_locPointsNum = 20; m_locTrianglesNum = 36; tmpA.setLength(m_locPointsNum);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(m_locBoxPoints[i][0]  , m_locBoxPoints[i][1]  , m_locBoxPoints[i][2])*r*rM + offV, i); }}
 
+		// file
+		if (data->m_drawPresets == 11){ tmpA.clear(); m_locPointsNum = inPointArray.length(); m_locTrianglesNum = inTriangleArray.length(); tmpA.setLength(m_locPointsNum);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(inPointArray[i][0]  , inPointArray[i][1]  , inPointArray[i][2])*r*rM + offV, i); }}
+
+
 
 		// Calculate Outline points with breaks
 		int vC = 0;
@@ -1795,8 +1899,6 @@ MUserData* BaseLocOverride::prepareForDraw( const MDagPath& objPath, const MDagP
 			}
 
 		}
-
-		//data->m_locDrawPointsA.
 
 
 		// Calculate Polygons
@@ -1852,6 +1954,20 @@ MUserData* BaseLocOverride::prepareForDraw( const MDagPath& objPath, const MDagP
 
 	}
 
+	// File
+	if (data->m_drawPresets == 11)
+	{
+
+		data->m_locDrawTriangles.clear();
+
+		for (int i = 0; i < m_locTrianglesNum; i++)
+		{
+			data->m_locDrawTriangles.append(MPoint(inTriangleArray[i][0]*r , inTriangleArray[i][1]*r , inTriangleArray[i][2]*r )*rM + offV);
+		}
+
+	}
+
+
 
 
 
@@ -1905,7 +2021,7 @@ MUserData* BaseLocOverride::prepareForDraw( const MDagPath& objPath, const MDagP
 	if (data->m_drawPresets == 1)
 	{
 
-		
+
 
 		data->m_locDrawTriangles.clear();
 
@@ -2206,6 +2322,13 @@ void BaseLocOverride::addUIDrawables( const MDagPath& objPath, MHWRender::MUIDra
 
 		MColor baseCol = pLocatorData->m_locColor;
 
+		bool drawFill = true;
+
+		if (pLocatorData->m_polygonAlpha == 0.0)
+		{
+			drawFill = false;
+		}
+
 		float bCD_r = baseCol.r - pLocatorData->m_polygonColor.r;
 		float bCD_g = baseCol.g - pLocatorData->m_polygonColor.g;
 		float bCD_b = baseCol.b - pLocatorData->m_polygonColor.b;
@@ -2233,7 +2356,7 @@ void BaseLocOverride::addUIDrawables( const MDagPath& objPath, MHWRender::MUIDra
 
 
 			fillCol = MColor( pLocatorData->m_locColor.r, pLocatorData->m_locColor.g, pLocatorData->m_locColor.b, pLocatorData->m_polygonAlpha );
-			lineCol = MColor( pLocatorData->m_locColor.r + 0.25, pLocatorData->m_locColor.g + 0.25, pLocatorData->m_locColor.b + 0.25,  pLocatorData->m_lineAlpha );
+			lineCol = MColor( pLocatorData->m_locColor.r + 0.25f, pLocatorData->m_locColor.g + 0.25f, pLocatorData->m_locColor.b + 0.25f,  pLocatorData->m_lineAlpha );
 		}
 
 		if ( MHWRender::MGeometryUtilities::displayStatus(objPath) == M3dView::kActive ) {
@@ -2292,10 +2415,13 @@ void BaseLocOverride::addUIDrawables( const MDagPath& objPath, MHWRender::MUIDra
 			}
 
 
+			if (drawFill)
+			{
+				// Draw fill
+				drawManager.setColor( fillCol );
+				drawManager.mesh(MHWRender::MUIDrawManager::kTriStrip, pLocatorData->m_locDrawTriangles);
+			}
 
-			// Draw fill
-			drawManager.setColor( fillCol );
-			drawManager.mesh(MHWRender::MUIDrawManager::kTriStrip, pLocatorData->m_locDrawTriangles);
 
 			// Draw outline
 			drawManager.setColor( lineCol );
@@ -2308,10 +2434,12 @@ void BaseLocOverride::addUIDrawables( const MDagPath& objPath, MHWRender::MUIDra
 		// Draw Box
 		if (pLocatorData->m_drawPresets == 1)
 		{
-
-			// Draw fill
-			drawManager.setColor( fillCol );
-			drawManager.mesh(MHWRender::MUIDrawManager::kTriangles, pLocatorData->m_locDrawTriangles);
+			if (drawFill)
+			{
+				// Draw fill
+				drawManager.setColor( fillCol );
+				drawManager.mesh(MHWRender::MUIDrawManager::kTriangles, pLocatorData->m_locDrawTriangles);
+			}
 
 			// Draw outline
 			drawManager.setColor( lineCol );
@@ -2350,11 +2478,12 @@ void BaseLocOverride::addUIDrawables( const MDagPath& objPath, MHWRender::MUIDra
 		// Draw Rectangle
 		if (pLocatorData->m_drawPresets == 4)
 		{
-
-			// Draw fill
-			drawManager.setColor( fillCol );
-			drawManager.mesh(MHWRender::MUIDrawManager::kTriStrip, pLocatorData->m_locDrawTriangles);
-
+			if (drawFill)
+			{
+				// Draw fill
+				drawManager.setColor( fillCol );
+				drawManager.mesh(MHWRender::MUIDrawManager::kTriStrip, pLocatorData->m_locDrawTriangles);
+			}
 			// Draw outline
 			drawManager.setColor( lineCol );
 			drawManager.setLineWidth(pLocatorData->m_lineWidth);
@@ -2374,10 +2503,12 @@ void BaseLocOverride::addUIDrawables( const MDagPath& objPath, MHWRender::MUIDra
 			center -= MVector(pLocatorData->m_offsetX,pLocatorData->m_offsetY,pLocatorData->m_offsetZ);
 			center += offV;
 
-
-			// Draw fill
-			drawManager.setColor( fillCol );
-			drawManager.circle(center, vU, r, true);
+			if (drawFill)
+			{
+				// Draw fill
+				drawManager.setColor( fillCol );
+				drawManager.circle(center, vU, r, true);
+			}
 
 			// Draw outline
 			drawManager.setColor( lineCol );
@@ -2403,19 +2534,28 @@ void BaseLocOverride::addUIDrawables( const MDagPath& objPath, MHWRender::MUIDra
 
 		if (pLocatorData->m_drawPresets == 6)
 		{
-			// Draw fill
-			drawManager.setColor( fillCol );
-			drawManager.mesh(MHWRender::MUIDrawManager::kTriangles, pLocatorData->m_locDrawTriangles);
-
-			// Draw outline
-			drawManager.setColor( lineCol );
-			drawManager.setLineWidth(pLocatorData->m_lineWidth);
-
-			for (int i = 0; i < pLocatorData->m_locDrawPointsA.size(); i++)
+			if (drawFill)
 			{
-
-				drawManager.mesh(MHWRender::MUIDrawManager::kLineStrip, pLocatorData->m_locDrawPointsA[i]);
+				// Draw fill
+				drawManager.setColor( fillCol );
+				drawManager.mesh(MHWRender::MUIDrawManager::kTriangles, pLocatorData->m_locDrawTriangles);
 			}
+
+			if (pLocatorData->m_lineWidth != 0.0)
+			{
+				// Draw outline
+				drawManager.setColor( lineCol );
+				drawManager.setLineWidth(pLocatorData->m_lineWidth);
+
+				for (int i = 0; i < pLocatorData->m_locDrawPointsA.size(); i++)
+				{
+
+					drawManager.mesh(MHWRender::MUIDrawManager::kLineStrip, pLocatorData->m_locDrawPointsA[i]);
+				}
+
+			}
+
+
 
 
 
@@ -2459,10 +2599,12 @@ void BaseLocOverride::addUIDrawables( const MDagPath& objPath, MHWRender::MUIDra
 		// Draw Camera
 		if (pLocatorData->m_drawPresets == 8)
 		{
-
-			// Draw fill
-			drawManager.setColor( fillCol );
-			drawManager.mesh(MHWRender::MUIDrawManager::kTriangles, pLocatorData->m_locDrawTriangles);
+			if (drawFill)
+			{
+				// Draw fill
+				drawManager.setColor( fillCol );
+				drawManager.mesh(MHWRender::MUIDrawManager::kTriangles, pLocatorData->m_locDrawTriangles);
+			}
 
 			// Draw outline
 			drawManager.setColor( lineCol );
@@ -2476,6 +2618,41 @@ void BaseLocOverride::addUIDrawables( const MDagPath& objPath, MHWRender::MUIDra
 				drawManager.mesh(MHWRender::MUIDrawManager::kLineStrip,  pLocatorData->m_locDrawPointsA[i]);
 			}
 
+
+		}
+
+
+		// Draw File
+		if (pLocatorData->m_drawPresets == 11)
+		{
+			if (drawFill)
+			{
+				// Draw fill
+				drawManager.setColor( fillCol );
+				drawManager.mesh(MHWRender::MUIDrawManager::kTriangles, pLocatorData->m_locDrawTriangles);
+			}
+
+
+
+			// Draw outline
+			drawManager.setColor( lineCol );
+			drawManager.setLineWidth(pLocatorData->m_lineWidth);
+
+
+			for (int i = 0; i < pLocatorData->m_locDrawPointsA.size(); i++)
+			{
+
+				//drawManager.mesh(MHWRender::MUIDrawManager::kClosedLine, pLocatorData->m_locDrawPoints);
+				drawManager.mesh(MHWRender::MUIDrawManager::kLineStrip,  pLocatorData->m_locDrawPointsA[i]);
+			}
+
+			// MGlobal::displayInfo(MString() + pLocatorData->m_locDrawPointsA.size());
+
+			//if (pLocatorData->m_locDrawPointsA.size() < 2 || pLocatorData->m_locDrawTriangles.length() == 0)
+			//{
+
+			//	drawManager.text(MPoint::origin, "No input point arrays", MHWRender::MUIDrawManager::TextAlignment::kCenter);
+			//}
 
 		}
 
@@ -2671,6 +2848,7 @@ MStatus BaseLoc::initialize()
 	eAttr.addField("Camera", 8);
 	eAttr.addField("2D Icons", 9);
 	eAttr.addField("A-B", 10);
+	eAttr.addField("File", 11);
 
 	eAttr.setDefault(6);
 
@@ -2785,6 +2963,22 @@ MStatus BaseLoc::initialize()
 	nAttr.setChannelBox( true );
 	addAttribute( aDivision );
 
+	aPointSize = nAttr.create( "pointSize", "pointSize", MFnNumericData::kInt );
+	nAttr.setStorable(true);
+	nAttr.setReadable(false);
+	nAttr.setDefault(5);
+	nAttr.setMin(1);
+	nAttr.setMax(10);
+	nAttr.setKeyable( true );
+	nAttr.setChannelBox( true );
+	addAttribute( aPointSize );
+
+	aLocID = nAttr.create( "locID", "locID", MFnNumericData::kInt );
+	nAttr.setDefault( 1 );
+	nAttr.setMin(1);
+	nAttr.setSoftMax(10);
+	addAttribute( aLocID );
+
 	aRadius = nAttr.create( "radius", "radius", MFnNumericData::kDouble );
 	nAttr.setStorable(true);
 	nAttr.setDefault(1.0);
@@ -2878,6 +3072,15 @@ MStatus BaseLoc::initialize()
 	nAttr.setChannelBox(true);
 	addAttribute(aScaleZ);
 
+	aFadeDistance = nAttr.create( "fadeDistance", "fadeDistance", MFnNumericData::kDouble );
+	nAttr.setStorable(true);
+	nAttr.setDefault(10.0);
+	nAttr.setSoftMax(10.0);
+	nAttr.setMin(0.0);
+	nAttr.setKeyable( true );
+	nAttr.setChannelBox( true );
+	addAttribute( aFadeDistance );
+
 	aLineWidth = nAttr.create( "lineWidth", "lineWidth", MFnNumericData::kFloat );
 	nAttr.setStorable(true);
 	nAttr.setReadable(false);
@@ -2887,16 +3090,6 @@ MStatus BaseLoc::initialize()
 	nAttr.setKeyable( true );
 	nAttr.setChannelBox( true );
 	addAttribute( aLineWidth );
-
-	aPointSize = nAttr.create( "pointSize", "pointSize", MFnNumericData::kInt );
-	nAttr.setStorable(true);
-	nAttr.setReadable(false);
-	nAttr.setDefault(5);
-	nAttr.setMin(1);
-	nAttr.setMax(10);
-	nAttr.setKeyable( true );
-	nAttr.setChannelBox( true );
-	addAttribute( aPointSize );
 
 
 
@@ -2935,13 +3128,20 @@ MStatus BaseLoc::initialize()
 	nAttr.setChannelBox( true );
 	addAttribute( aPolygonAlpha );
 
+
+	aTextBoxTransparency = nAttr.create("textBoxTransparency", "textBoxTransparency", MFnNumericData::kFloat, 1.0);
+	nAttr.setMin(0.0);
+	nAttr.setDefault(1.0);
+	nAttr.setMax(1.0);
+	addAttribute(aTextBoxTransparency);
+
+
 	// ---------------------------------------------------------------------------------------------------
 	// Switches
 
 	aDispNum = nAttr.create( "displayLocatorId", "displayLocatorId", MFnNumericData::kBoolean );
 	nAttr.setStorable(true);
 	nAttr.setReadable(false);
-	nAttr.setCached(true);
 	nAttr.setDefault(false);
 	nAttr.setKeyable( true );
 	nAttr.setChannelBox( true );
@@ -2986,6 +3186,15 @@ MStatus BaseLoc::initialize()
 	nAttr.setKeyable( true );
 	nAttr.setChannelBox( true );
 	addAttribute( aDispText );
+
+	aFadeByDistance = nAttr.create( "fadeByDistance", "fadeByDistance", MFnNumericData::kBoolean );
+	nAttr.setStorable(true);
+	nAttr.setReadable(false);
+	nAttr.setDefault( true );
+	nAttr.setKeyable( true );
+	nAttr.setChannelBox( true );
+	addAttribute( aFadeByDistance );
+
 
 	// ---------------------------------------------------------------------------------------------------
 	// Draw style
@@ -3085,40 +3294,10 @@ MStatus BaseLoc::initialize()
 	nAttr.setUsedAsColor(true);
 	addAttribute(aTextBoxColor);
 
-	aTextBoxTransparency = nAttr.create("textBoxTransparency", "textBoxTransparency", MFnNumericData::kFloat, 1.0);
-	nAttr.setMin(0.0);
-	nAttr.setDefault(1.0);
-	nAttr.setMax(1.0);
-	addAttribute(aTextBoxTransparency);
-
-	// ---------------------------------------------------------------------------------------------------
-	// Fade by distance
-
-	aFadeByDistance = nAttr.create( "fadeByDistance", "fadeByDistance", MFnNumericData::kBoolean );
-	nAttr.setStorable(true);
-	nAttr.setReadable(false);
-	nAttr.setDefault( true );
-	nAttr.setKeyable( true );
-	nAttr.setChannelBox( true );
-	addAttribute( aFadeByDistance );
-
-	aFadeDistance = nAttr.create( "fadeDistance", "fadeDistance", MFnNumericData::kDouble );
-	nAttr.setStorable(true);
-	nAttr.setDefault(10.0);
-	nAttr.setSoftMax(10.0);
-	nAttr.setMin(0.0);
-	nAttr.setKeyable( true );
-	nAttr.setChannelBox( true );
-	addAttribute( aFadeDistance );
 
 	// ---------------------------------------------------------------------------------------------------
 	// VP 1.0
 
-	aLocID = nAttr.create( "locID", "locID", MFnNumericData::kInt );
-	nAttr.setDefault( 1 );
-	nAttr.setMin(1);
-	nAttr.setSoftMax(10);
-	addAttribute( aLocID );
 
 	aInLocPosA = mAttr.create( "locatorPosA", "locatorPosA", MFnMatrixAttribute::kDouble );
 	mAttr.setChannelBox(false);
@@ -3136,10 +3315,23 @@ MStatus BaseLoc::initialize()
 	mAttr.setKeyable(false);
 	addAttribute( aInLocPosB );
 
-	//aTime = uAttr.create("time", "time", MFnUnitAttribute::kTime, 0.0);
-	//uAttr.setWritable(true);
-	//uAttr.setReadable(false);
-	//addAttribute(aTime);
+	// Add text attributes.
+	MObject defaultText_path = stringFn.create( "Unknown path" );
+	aPresetFolderPath = tAttr.create("presetFolderPath", "presetFolderPath", MFnData::kString, defaultText_path);
+	tAttr.setKeyable(false);
+	tAttr.setChannelBox(false);
+	//tAttr.setUsedAsFilename(true);
+	addAttribute(aPresetFolderPath);
+
+	aInPointArray = tAttr.create( "inPointArray", "inPointArray", MFnPointArrayData::kPointArray );
+	tAttr.setStorable(true);
+	tAttr.setInternal(true);
+	addAttribute( aInPointArray );
+
+	aInTriangleArray = tAttr.create( "inTriangleArray", "inTriangleArray", MFnPointArrayData::kPointArray );
+	tAttr.setStorable(true);
+	tAttr.setInternal(true);
+	addAttribute( aInTriangleArray );
 
 
 	return MS::kSuccess;

@@ -15,6 +15,7 @@
 #include <maya/MGlobal.h>
 #include <maya/MFnMatrixAttribute.h>
 #include <maya/MFnMatrixData.h>
+#include <maya/MFnPointArrayData.h>
 #include <maya/MFnNumericAttribute.h>
 #include <maya/MFnTypedAttribute.h>
 #include <maya/MFnGenericAttribute.h>
@@ -27,6 +28,9 @@
 #include <maya/MFnTransform.h>
 #include <maya/MFnUnitAttribute.h>
 #include <maya/MTime.h>
+#include <maya/MFileObject.h>
+#include <maya/MFileIO.h>
+#include <maya/MFnPointArrayData.h>
 
 // Viewport 2.0 includes
 #include <maya/MDrawRegistry.h>
@@ -36,6 +40,8 @@
 #include <maya/MHWGeometryUtilities.h>
 
 #include <vector>
+#include <fstream>
+#include <sstream>
 
 using namespace std;
 
@@ -69,6 +75,8 @@ public:
 	static  MStatus         initialize();
 
 public:
+
+	MStatus                 checkPresetFolder();
 
 	static MString		drawDbClassification;
 	static MString		drawRegistrantId;
@@ -134,11 +142,18 @@ public:
     static MObject		aInLocPosA;
     static MObject		aInLocPosB;
     
-    
-	//static MObject      aTime;
+	static MString		aPluginLoadPath;
+	static MObject		aPresetFolderPath;
+
+	static MObject		aInPointArray;
+	static MObject		aInTriangleArray;
 
 private:
 	MMatrix				m_modelViewMat;
+	bool				m_fileInitialized;
+
+	MFileObject         o_presetPath;
+	MString             s_readPluginPath;
 };
 
 //---------------------------------------------------------------------------
@@ -237,6 +252,9 @@ public:
 	static MStringArray		m_fFontList;
 
 	double					m_inTime;
+
+
+	
 
 };
 

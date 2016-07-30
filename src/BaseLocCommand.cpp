@@ -7,6 +7,7 @@
 //
 
 #include "BaseLocCommand.h"
+#include "Utils.h"
 
 BaseLocCommand::BaseLocCommand()
 {
@@ -44,6 +45,16 @@ MSyntax BaseLocCommand::newSyntax()
 	syntax.addFlag( "-ry", "-rotatey", MSyntax::kDouble );
 	syntax.addFlag( "-rz", "-rotatez", MSyntax::kDouble );
 
+	syntax.addFlag( "-sp", "-savePreset", MSyntax::kString  );
+	syntax.addFlag( "-lp", "-loadPreset", MSyntax::kString  );
+
+	syntax.addFlag( "-bl", "-baseLocNode", MSyntax::kString  );
+
+	syntax.addFlag( "-pp", "-presetPath", MSyntax::kString  );
+
+	syntax.addFlag( "-la", "-lineArray", MSyntax::kString  );
+	syntax.addFlag( "-ta", "-triangleArray", MSyntax::kString  );
+
 	//syntax.setObjectType( MSyntax::kSelectionList, 1, 1 );
 	//syntax.useSelectionAsDefault( true );
 
@@ -74,6 +85,9 @@ MStatus BaseLocCommand::doIt( const MArgList& argList )
 	double d_rotY = 0.0;
 	double d_rotZ = 0.0;
 
+	MString s_lineA;
+	MString s_triangleA;
+
 	MString s_locName("untitled");
 
 	if ( argData.isFlagSet( "name" ) ) { s_locName = argData.flagArgumentString("name",0); }
@@ -90,98 +104,249 @@ MStatus BaseLocCommand::doIt( const MArgList& argList )
 	if ( argData.isFlagSet( "rotatey" ) ) { d_rotY = argData.flagArgumentDouble("rotatey",0); }
 	if ( argData.isFlagSet( "rotatez" ) ) { d_rotZ = argData.flagArgumentDouble("rotatez",0); }
 
-	// check results
+	if ( argData.isFlagSet( "lineArray" ) ) { s_lineA = argData.flagArgumentString("lineArray",0); }
+	if ( argData.isFlagSet( "triangleArray" ) ) { s_triangleA = argData.flagArgumentString("triangleArray",0); }
 
-	if ( i_preset > 10 ) { i_preset = 10;	}
-	if ( i_icontype > 26)  { i_icontype = 26;}
-	if ( d_radius <= 0.0 ) { d_radius = 1.0;}
 
-	double r,g,b = 0.5;
+	// -----------------------------------------------------------------------------------------
+	// SAVE PRESET TO BaseLoc
 
-	switch ( i_color ) 
+	if ( argData.isFlagSet( "savePreset" ) )
 	{
 
-	case 1: r = 1.0; g = 0.0; b = 0.0; break;
-	case 2: r = 0.0; g = 1.0; b = 0.0; break;
-	case 3: r = 0.0; g = 0.0; b = 1.0; break;
-	case 4: r = 0.0; g = 1.0; b = 1.0; break;
-	case 5: r = 1.0; g = 0.0; b = 1.0; break;
-	case 6: r = 1.0; g = 1.0; b = 0.0; break;
-	case 7: r = 0.5; g = 0.5; b = 0.5; break;
-	case 8: r = 1.0; g = 0.5; b = 0.5; break;
-	case 9: r = 0.5; g = 1.0; b = 0.5; break;
-	case 10: r = 1.0; g = 1.0; b = 1.0; break;
+		MString s_presetName;
+		MString s_baseLocNodeName;
+		MString s_pPath;
 
-	default:
-		r = 0.0; g = 1.0; b = 1.0;
+		argData.getFlagArgument("savePreset", 0, s_presetName);
+
+
+
+		if (!argData.isFlagSet( "baseLocNode" ))
+		{
+			MGlobal::displayError(MString() + "[BaseLoc] No BaseLoc name set for command (use the -bl flag to set)");
+			return MStatus::kFailure;
+		}
+
+		argData.getFlagArgument("baseLocNode", 0, s_baseLocNodeName);
+
+		if (!argData.isFlagSet( "presetPath" ))
+		{
+			MGlobal::displayError(MString() + "[BaseLoc] Preset path name set for command (use the -pp flag to set)");
+			return MStatus::kFailure;
+		}
+
+		argData.getFlagArgument("presetPath", 0, s_pPath);
+
+		save_locatorData(s_pPath, s_presetName, s_lineA, s_triangleA);
+
+		// Refresh plugs + AE Template
+		MGlobal::executeCommand("dgdirty " + s_baseLocNodeName);
+		MGlobal::executeCommand("refreshAE");
+
+
 	}
 
-	// Create locator
-	o_baseLocNode = m_DEPNode.create("BaseLoc");
-	MFnDependencyNode fnDepTrg( o_baseLocNode );
 
-	// Rename it
-	if (argData.isFlagSet( "-name" ))
+
+
+
+	// -----------------------------------------------------------------------------------------
+	// LOAD PRESET TO BaseLoc
+	//
+	// BaseLocCommand -lp "box" -pp "p:/Maya/GitHub/cc-maya-base_locator/presets/" -bl "BaseLoc1";
+	//
+
+	else if ( argData.isFlagSet( "loadPreset" ) )
 	{
-		fnDepTrg.setName( s_locName );
-		MPxCommand::setResult(fnDepTrg.name());
+		MString s_presetName;
+		MString s_baseLocNodeName;
+		MString s_pPath;
 
+		argData.getFlagArgument("loadPreset", 0, s_presetName);
+
+		if (!argData.isFlagSet( "baseLocNode" ))
+		{
+			MGlobal::displayError(MString() + "[BaseLoc] No BaseLoc name set for command (use the -bl flag to set)");
+			return MStatus::kFailure;
+		}
+
+		argData.getFlagArgument("baseLocNode", 0, s_baseLocNodeName);
+
+		if (!argData.isFlagSet( "presetPath" ))
+		{
+			MGlobal::displayError(MString() + "[BaseLoc] Preset path name set for command (use the -pp flag to set)");
+			return MStatus::kFailure;
+		}
+
+		argData.getFlagArgument("presetPath", 0, s_pPath);
+
+		// Find Shellmod from name
+		MObject MObj;
+		MSelectionList selList;
+		selList.add(s_baseLocNodeName);
+		selList.getDependNode(0,MObj);	
+
+		load_locatorData(s_pPath, s_presetName, MObj);
+
+		// Refresh plugs + AE Template
+		MGlobal::executeCommand("dgdirty " + s_baseLocNodeName);
+		MGlobal::executeCommand("refreshAE");
+
+
+		return MStatus::kSuccess;
 	}
 
 
-	// Set plugs
-	MDagPath dag_LocATr;
-	MDagPath dag_LocAShape;
-	MDagPath dag_LocA;
-	MSelectionList sel_list;
-	sel_list.add(fnDepTrg.name());
-	sel_list.getDagPath(0,dag_LocA);
-	dag_LocATr = dag_LocA;
-	dag_LocA.extendToShape();
-	dag_LocAShape = dag_LocA;
 
-	MFnDependencyNode fnDepLocShape( dag_LocAShape.node() );
-
-	MPlug p_preset = fnDepLocShape.findPlug("presets");
-	MPlug p_icontype = fnDepLocShape.findPlug("iconType");
-	MPlug p_radius = fnDepLocShape.findPlug("radius");
-
-	MPlug p_trX = fnDepLocShape.findPlug("offsetX");
-	MPlug p_trY = fnDepLocShape.findPlug("offsetY");
-	MPlug p_trZ = fnDepLocShape.findPlug("offsetZ");
-
-	MPlug p_rotX = fnDepLocShape.findPlug("rotateX");
-	MPlug p_rotY = fnDepLocShape.findPlug("rotateY");
-	MPlug p_rotZ = fnDepLocShape.findPlug("rotateZ");
+	// -----------------------------------------------------------------------------------------
+	// Just create a default BaseLoc
+	//
+	// BaseLocCommand -sp "sphere" -pp "p:/Maya/GitHub/cc-maya-base_locator/presets/" -bl "BaseLoc1";
+	//
 
 
-	MPlug p_lineColR = fnDepLocShape.findPlug("lineColorR");
-	MPlug p_lineColG = fnDepLocShape.findPlug("lineColorG");
-	MPlug p_lineColB = fnDepLocShape.findPlug("lineColorB");
+	else
+	{
 
-	MPlug p_polyColR = fnDepLocShape.findPlug("polygonColorR");
-	MPlug p_polyColG = fnDepLocShape.findPlug("polygonColorG");
-	MPlug p_polyColB = fnDepLocShape.findPlug("polygonColorB");
 
-	p_preset.setInt( i_preset );
-	p_icontype.setInt( i_icontype );
-	p_radius.setDouble( d_radius );
 
-	p_trX.setDouble( d_offX );
-	p_trY.setDouble( d_offY );
-	p_trZ.setDouble( d_offZ );
 
-	p_rotX.setDouble( d_rotX );
-	p_rotY.setDouble( d_rotY );
-	p_rotZ.setDouble( d_rotZ );
+		// check results
 
-	p_lineColR.setDouble(r);
-	p_lineColG.setDouble(g);
-	p_lineColB.setDouble(b);
+		if ( i_preset > 10 ) { i_preset = 10;	}
+		if ( i_icontype > 26)  { i_icontype = 26;}
+		if ( d_radius <= 0.0 ) { d_radius = 1.0;}
 
-	p_polyColR.setDouble(r - 0.5);
-	p_polyColG.setDouble(g - 0.5);
-	p_polyColB.setDouble(b - 0.5);
+		double r,g,b = 0.5;
+
+		switch ( i_color ) 
+		{
+
+		case 1: r = 1.0; g = 0.0; b = 0.0; break;
+		case 2: r = 0.0; g = 1.0; b = 0.0; break;
+		case 3: r = 0.0; g = 0.0; b = 1.0; break;
+		case 4: r = 0.0; g = 1.0; b = 1.0; break;
+		case 5: r = 1.0; g = 0.0; b = 1.0; break;
+		case 6: r = 1.0; g = 1.0; b = 0.0; break;
+		case 7: r = 0.5; g = 0.5; b = 0.5; break;
+		case 8: r = 1.0; g = 0.5; b = 0.5; break;
+		case 9: r = 0.5; g = 1.0; b = 0.5; break;
+		case 10: r = 1.0; g = 1.0; b = 1.0; break;
+
+		default:
+			r = 0.0; g = 1.0; b = 1.0;
+		}
+
+		// Create locator
+		o_baseLocNode = m_DEPNode.create("BaseLoc", &status);
+		CHECK_MSTATUS_AND_RETURN_IT(status);
+		MFnDependencyNode fnDepTrg( o_baseLocNode );
+
+		// Rename it
+		if (argData.isFlagSet( "-name" ))
+		{
+			fnDepTrg.setName( s_locName );
+			MPxCommand::setResult(fnDepTrg.name());
+
+		}
+
+
+		// Set plugs
+		MDagPath dag_LocATr;
+		MDagPath dag_LocAShape;
+		MDagPath dag_LocA;
+		MSelectionList sel_list;
+
+		status = sel_list.add(fnDepTrg.name());
+		CHECK_MSTATUS_AND_RETURN_IT(status);
+
+		status = sel_list.getDagPath(0,dag_LocA);
+		CHECK_MSTATUS_AND_RETURN_IT(status);
+
+		dag_LocATr = dag_LocA;
+		status = dag_LocA.extendToShape();
+		CHECK_MSTATUS_AND_RETURN_IT(status);
+
+		dag_LocAShape = dag_LocA;
+
+		MFnDependencyNode fnDepLocShape( dag_LocAShape.node() );
+
+		MPlug p_preset = fnDepLocShape.findPlug("presets", &status);
+		CHECK_MSTATUS_AND_RETURN_IT(status);
+		MPlug p_icontype = fnDepLocShape.findPlug("iconType", &status);
+		CHECK_MSTATUS_AND_RETURN_IT(status);
+		MPlug p_radius = fnDepLocShape.findPlug("radius", &status);
+		CHECK_MSTATUS_AND_RETURN_IT(status);
+
+		MPlug p_trX = fnDepLocShape.findPlug("offsetX", &status);
+		CHECK_MSTATUS_AND_RETURN_IT(status);
+		MPlug p_trY = fnDepLocShape.findPlug("offsetY", &status);
+		CHECK_MSTATUS_AND_RETURN_IT(status);
+		MPlug p_trZ = fnDepLocShape.findPlug("offsetZ", &status);
+		CHECK_MSTATUS_AND_RETURN_IT(status);
+
+		MPlug p_rotX = fnDepLocShape.findPlug("rotateX", &status);
+		CHECK_MSTATUS_AND_RETURN_IT(status);
+		MPlug p_rotY = fnDepLocShape.findPlug("rotateY", &status);
+		CHECK_MSTATUS_AND_RETURN_IT(status);
+		MPlug p_rotZ = fnDepLocShape.findPlug("rotateZ", &status);
+		CHECK_MSTATUS_AND_RETURN_IT(status);
+
+
+		MPlug p_lineColR = fnDepLocShape.findPlug("lineColorR", &status);
+		CHECK_MSTATUS_AND_RETURN_IT(status);
+		MPlug p_lineColG = fnDepLocShape.findPlug("lineColorG", &status);
+		CHECK_MSTATUS_AND_RETURN_IT(status);
+		MPlug p_lineColB = fnDepLocShape.findPlug("lineColorB", &status);
+		CHECK_MSTATUS_AND_RETURN_IT(status);
+
+		MPlug p_polyColR = fnDepLocShape.findPlug("polygonColorR", &status);
+		CHECK_MSTATUS_AND_RETURN_IT(status);
+		MPlug p_polyColG = fnDepLocShape.findPlug("polygonColorG", &status);
+		CHECK_MSTATUS_AND_RETURN_IT(status);
+		MPlug p_polyColB = fnDepLocShape.findPlug("polygonColorB", &status);
+		CHECK_MSTATUS_AND_RETURN_IT(status);
+
+
+		status = p_preset.setInt( i_preset );
+		CHECK_MSTATUS_AND_RETURN_IT(status);
+		status = p_icontype.setInt( i_icontype );
+		CHECK_MSTATUS_AND_RETURN_IT(status);
+		status = p_radius.setDouble( d_radius );
+		CHECK_MSTATUS_AND_RETURN_IT(status);
+
+		status = p_trX.setDouble( d_offX );
+		CHECK_MSTATUS_AND_RETURN_IT(status);
+		status = p_trY.setDouble( d_offY );
+		CHECK_MSTATUS_AND_RETURN_IT(status);
+		status = p_trZ.setDouble( d_offZ );
+		CHECK_MSTATUS_AND_RETURN_IT(status);
+
+		status = p_rotX.setDouble( d_rotX );
+		CHECK_MSTATUS_AND_RETURN_IT(status);
+		status = p_rotY.setDouble( d_rotY );
+		CHECK_MSTATUS_AND_RETURN_IT(status);
+		status = p_rotZ.setDouble( d_rotZ );
+		CHECK_MSTATUS_AND_RETURN_IT(status);
+
+		status = p_lineColR.setDouble(r);
+		CHECK_MSTATUS_AND_RETURN_IT(status);
+		status = p_lineColG.setDouble(g);
+		CHECK_MSTATUS_AND_RETURN_IT(status);
+		status = p_lineColB.setDouble(b);
+		CHECK_MSTATUS_AND_RETURN_IT(status);
+
+		status = p_polyColR.setDouble(r - 0.5);
+		CHECK_MSTATUS_AND_RETURN_IT(status);
+		status = p_polyColG.setDouble(g - 0.5);
+		CHECK_MSTATUS_AND_RETURN_IT(status);
+		status = p_polyColB.setDouble(b - 0.5);
+		CHECK_MSTATUS_AND_RETURN_IT(status);
+
+	}
+
+	// BaseLocCommand -pa  "0.5,0.5,0.5,0.5,-0.5,0.5,0.5,-0.5,-0.5,0.5,0.5,-0.5,0.5,0.5,0.5,0.5,0.5,-0.5,-0.5,0.5,-0.5,-0.5,0.5,0.5,0.5,0.5,0.5,0.0,0.0,0.0,0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,0.5,-0.5,0.0,0.0,0.0,-0.5,-0.5,-0.5,-0.5,-0.5,0.5,-0.5,0.5,0.5,0.0,0.0,0.0,-0.5,-0.5,0.5,0.5,-0.5,0.5" -ta "-0.5,-0.5,0.5,0.5,-0.5,0.5,-0.5,0.5,0.5,-0.5,0.5,0.5,0.5,-0.5,0.5,0.5,0.5,0.5,-0.5,0.5,0.5,0.5,0.5,0.5,-0.5,0.5,-0.5,-0.5,0.5,-0.5,0.5,0.5,0.5,0.5,0.5,-0.5,-0.5,0.5,-0.5,0.5,0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,0.5,0.5,-0.5,0.5,-0.5,-0.5,-0.5,-0.5,-0.5,0.5,-0.5,-0.5,-0.5,-0.5,0.5,-0.5,-0.5,0.5,0.5,-0.5,-0.5,0.5,-0.5,0.5,0.5,-0.5,0.5,0.5,-0.5,-0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,-0.5,-0.5,0.5,0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,0.5,-0.5,0.5,-0.5,-0.5,0.5,-0.5,-0.5,-0.5,0.5,-0.5,0.5,0.5";
 
 	return redoIt();
 }

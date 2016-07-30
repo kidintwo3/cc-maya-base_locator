@@ -28,6 +28,8 @@
 #include <maya/MTransformationMatrix.h>
 #include <maya/MFnTransform.h>
 #include <maya/MDagPathArray.h>
+#include <maya/MArgList.h>
+#include <maya/MFnPointArrayData.h>
 
 
 class BaseLocCommand : public MPxCommand
