@@ -9,6 +9,8 @@
 #ifndef BaseLoc_H
 #define BaseLoc_H
 
+
+
 #include <maya/MPxLocatorNode.h>
 #include <maya/M3dView.h>
 #include <maya/MMatrix.h>
@@ -42,6 +44,7 @@
 #include <vector>
 #include <fstream>
 #include <sstream>
+
 
 using namespace std;
 
