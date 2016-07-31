@@ -148,6 +148,9 @@ public:
 	static MObject		aInPointArray;
 	static MObject		aInTriangleArray;
 
+	static MObject		aBoundingBoxA;
+	static MObject		aBoundingBoxB;
+
 private:
 	MMatrix				m_modelViewMat;
 	bool				m_fileInitialized;

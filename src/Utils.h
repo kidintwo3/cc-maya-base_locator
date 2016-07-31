@@ -20,6 +20,7 @@
 #include <maya/MFnMesh.h>
 #include <maya/MItMeshEdge.h>
 #include <maya/MItMeshPolygon.h>
+#include <maya/MFnNumericData.h>
 
 using namespace std;
 
@@ -71,11 +72,6 @@ MStatus load_locatorData(MString &s_pathName, MString &s_presetName, MObject &o_
 		s_f_presetName = s_lines[0];
 		s_f_linePosValues = s_lines[1];
 		s_f_triangleValues = s_lines[2];
-
-		//MGlobal::displayInfo(MString() + "[BaseLoc] Preset name: " + s_f_presetName);
-		//MGlobal::displayInfo(MString() + "[BaseLoc] Preset line values: " + s_f_linePosValues);
-		//MGlobal::displayInfo(MString() + "[BaseLoc] Preset triangle values: " + s_f_triangleValues);
-		//MGlobal::displayInfo(MString() + "[BaseLoc] Preset BB values: " + s_f_boundingboxValues);
 
 
 		MStringArray s_pointsA;
@@ -157,6 +153,13 @@ MStatus load_locatorData(MString &s_pathName, MString &s_presetName, MObject &o_
 		CHECK_MSTATUS_AND_RETURN_IT(status);
 
 
+		MPlug p_BBPlugA = fnDepLocShape.findPlug("boundingBoxA", &status);
+		CHECK_MSTATUS_AND_RETURN_IT(status);
+
+		MPlug p_BBPlugB = fnDepLocShape.findPlug("boundingBoxB", &status);
+		CHECK_MSTATUS_AND_RETURN_IT(status);
+
+
 		MFnPointArrayData pAD_points;
 		MObject o_pA = pAD_points.create(m_line_values_file, &status);
 		CHECK_MSTATUS_AND_RETURN_IT(status);
@@ -172,11 +175,37 @@ MStatus load_locatorData(MString &s_pathName, MString &s_presetName, MObject &o_
 		CHECK_MSTATUS_AND_RETURN_IT(status);
 
 
+		for (int i = 0; i < m_triangle_values_file.length(); i++)
+		{
+			m_boundingBox.expand(m_triangle_values_file[i]);
+		} 
+
 		for (int i = 0; i < m_line_values_file.length(); i++)
 		{
 			m_boundingBox.expand(m_line_values_file[i]);
 		} 
 
+		MPoint p_BBA = m_boundingBox.min();
+		MPoint p_BBB = m_boundingBox.max();
+
+		//MGlobal::displayInfo(MString() + "BBA: " + p_BBA.x + ", " + p_BBA.y + ", " + p_BBA.z);
+		//MGlobal::displayInfo(MString() + "BBA: " + p_BBA.x + ", " + p_BBA.y + ", " + p_BBA.z);
+
+
+		MFnNumericData mfnBBA;
+		MObject oData_BBA = mfnBBA.create(MFnNumericData::k3Float);
+		MFnNumericData mfnBBB;
+		MObject oData_BBB = mfnBBB.create(MFnNumericData::k3Float);
+
+		mfnBBA.setData3Float(p_BBA.x, p_BBA.y, p_BBA.z);
+		mfnBBB.setData3Float(p_BBB.x, p_BBB.y, p_BBB.z);
+
+
+		status = p_BBPlugA.setMObject(oData_BBA);
+		CHECK_MSTATUS_AND_RETURN_IT(status);
+
+		status = p_BBPlugB.setMObject(oData_BBB);
+		CHECK_MSTATUS_AND_RETURN_IT(status);
 
 	}
 
@@ -199,7 +228,36 @@ MStatus save_locatorData(MString &s_pathName, MString &s_presetName, MString &s_
 
 	MStatus status;
 
+	// Get active selection
+	MSelectionList slist;
 
+	MGlobal::getActiveSelectionList( slist, true );
+
+	MDagPath objectPath_tr;
+	MDagPath objectPath_shape;
+
+	MObject component;
+
+	status = slist.getDagPath(0,objectPath_tr, component);
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+
+	objectPath_shape = objectPath_tr;
+	status = objectPath_shape.extendToShape();
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+
+	
+
+	// If polygon count is sxceeded return
+	MFnMesh mFn(objectPath_shape);
+	if (mFn.numPolygons() > 2000)
+	{
+		MGlobal::displayWarning(MString() + "[BaseLoc] Polygon count exceeded (" + mFn.numPolygons() + "). Select mesh with less than 2000 polygons");
+		return::MStatus::kSuccess;
+	}
+
+
+
+	// Crete output file
 	MString s_path = s_pathName;
 	s_pathName += s_presetName + ".blp";
 
@@ -207,36 +265,32 @@ MStatus save_locatorData(MString &s_pathName, MString &s_presetName, MString &s_
 
 	if (s_lineA == "")
 	{
-		MSelectionList slist;
-		MGlobal::getActiveSelectionList( slist );
 
-		MDagPath objectPath_tr;
-		MDagPath objectPath_shape;
-
-		status = slist.getDagPath(0,objectPath_tr);
-		CHECK_MSTATUS_AND_RETURN_IT(status);
-
-		objectPath_shape = objectPath_tr;
-		status = objectPath_shape.extendToShape();
-		CHECK_MSTATUS_AND_RETURN_IT(status);
 
 		if (objectPath_shape.isValid())
 		{
-			MItMeshEdge mitEdge(objectPath_shape);
 
-			for ( ; !mitEdge.isDone(); mitEdge.next() )
+			if (component.apiType() ==  MFn::kMeshEdgeComponent )
 			{
 
-				MPoint edgeVert_A = mitEdge.point(0, MSpace::kObject, &status);
+				MItMeshEdge mitEdge(objectPath_shape, component, &status);
 				CHECK_MSTATUS_AND_RETURN_IT(status);
 
-				MPoint edgeVert_B = mitEdge.point(1, MSpace::kObject, &status);
-				CHECK_MSTATUS_AND_RETURN_IT(status);
+				for ( ; !mitEdge.isDone(); mitEdge.next() )
+				{
 
-				s_lineA += MString() + edgeVert_A.x + "," + edgeVert_A.y + "," + edgeVert_A.z + ",";
-				s_lineA += MString() + edgeVert_B.x + "," + edgeVert_B.y + "," + edgeVert_B.z + ",";
+					MPoint edgeVert_A = mitEdge.point(0, MSpace::kObject, &status);
+					CHECK_MSTATUS_AND_RETURN_IT(status);
 
-				s_lineA += MString() + 0.0 + "," + 0.0 + "," + 0.0 + ",";
+					MPoint edgeVert_B = mitEdge.point(1, MSpace::kObject, &status);
+					CHECK_MSTATUS_AND_RETURN_IT(status);
+
+					s_lineA += MString() + edgeVert_A.x + "," + edgeVert_A.y + "," + edgeVert_A.z + ",";
+					s_lineA += MString() + edgeVert_B.x + "," + edgeVert_B.y + "," + edgeVert_B.z + ",";
+
+					s_lineA += MString() + 0.0 + "," + 0.0 + "," + 0.0 + ",";
+
+				}
 
 			}
 		}
@@ -277,7 +331,7 @@ MStatus save_locatorData(MString &s_pathName, MString &s_presetName, MString &s_
 					s_triangleA += MString() + tirangle_A[i].x + "," + tirangle_A[i].y + "," + tirangle_A[i].z + ",";
 				}
 
-				
+
 
 
 			}

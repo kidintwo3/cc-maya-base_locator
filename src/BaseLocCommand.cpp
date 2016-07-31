@@ -235,7 +235,7 @@ MStatus BaseLocCommand::doIt( const MArgList& argList )
 		case 10: r = 1.0; g = 1.0; b = 1.0; break;
 
 		default:
-			r = 0.0; g = 1.0; b = 1.0;
+			r = 1.0; g = 1.0; b = 1.0;
 		}
 
 		// Create locator

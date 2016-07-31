@@ -84,6 +84,9 @@ MString     BaseLoc::aPluginLoadPath;
 MObject		BaseLoc::aInPointArray;
 MObject		BaseLoc::aInTriangleArray;
 
+MObject		BaseLoc::aBoundingBoxA;
+MObject		BaseLoc::aBoundingBoxB;
+
 MString		BaseLoc::drawDbClassification("drawdb/geometry/BaseLoc");
 MString		BaseLoc::drawRegistrantId("BaseLocPlugin");
 
@@ -1231,6 +1234,45 @@ MBoundingBox BaseLoc::boundingBox() const
 	}
 
 
+	// IF file is selected as preset return the read BB corners immediately
+	if (drawPresets == 11)
+	{
+		//MGlobal::displayInfo(MString() + objPath.partialPathName());
+
+		// Get BB A
+		p = MPlug(thisNode, BaseLoc::aBoundingBoxA);
+		MFnNumericData numdFn_BBA(p.asMObject());
+		float v3fVal_BBA[3];
+		numdFn_BBA.getData3Float(v3fVal_BBA[0], v3fVal_BBA[1], v3fVal_BBA[2]);
+
+		p = MPlug(thisNode, BaseLoc::aBoundingBoxB);
+		MFnNumericData numdFn_BBB(p.asMObject());
+		float v3fVal_BBB[3];
+		numdFn_BBB.getData3Float(v3fVal_BBB[0], v3fVal_BBB[1], v3fVal_BBB[2]);
+
+		corner1 = MPoint(v3fVal_BBA[0], v3fVal_BBA[1], v3fVal_BBA[2]);
+		corner2 = MPoint(v3fVal_BBB[0], v3fVal_BBB[1], v3fVal_BBB[2]);
+
+		corner1 = corner1 *multiplier;
+		corner2 = corner2 *multiplier;
+
+		corner1 *= rM;
+		corner2 *= rM;
+
+		corner1 *= m_modelViewMat.inverse();
+		corner2 *= m_modelViewMat.inverse();
+
+
+		corner1 += offV;
+		corner2 += offV;
+
+		
+	}
+
+
+
+
+
 
 	return MBoundingBox( corner1, corner2 );
 
@@ -1274,29 +1316,34 @@ MBoundingBox BaseLocOverride::boundingBox( const MDagPath& objPath, const MDagPa
 
 	double multiplier;
 
-	MObject footprintNode = objPath.node(&status);
+	MObject o_BaseLocNode = objPath.node(&status);
 	if (status)
 	{
-		MPlug plug(footprintNode, BaseLoc::aRadius);
+		MPlug plug(o_BaseLocNode, BaseLoc::aRadius);
 		if (!plug.isNull())
 		{
 			plug.getValue( multiplier );
 		}
 	}
 
+
 	MPoint corner1( -1.0, 0.0, -1.0 );
 	MPoint corner2( 1.0, 0.0, 1.0 );
 
 	MPlug p;
 
+
+
 	// Get input Locator Matricies
-	p = MPlug(footprintNode, BaseLoc::aInLocPosA);
+	p = MPlug(o_BaseLocNode, BaseLoc::aInLocPosA);
 	MObject o_inlocMatA;
 	p.getValue(o_inlocMatA);
 
-	p = MPlug(footprintNode, BaseLoc::aInLocPosB);
+	p = MPlug(o_BaseLocNode, BaseLoc::aInLocPosB);
 	MObject o_inlocMatB;
 	p.getValue(o_inlocMatB);
+
+
 
 	MMatrix m_inlocMatA, m_inlocMatB;
 	MFnMatrixData mfMA(o_inlocMatA);
@@ -1309,77 +1356,77 @@ MBoundingBox BaseLocOverride::boundingBox( const MDagPath& objPath, const MDagPa
 	MPoint inLocB_pos = inLocB_posMat.getTranslation(MSpace::kWorld);
 
 	// Get allways face camera
-	p = MPlug(footprintNode, BaseLoc::aDispCard);
+	p = MPlug(o_BaseLocNode, BaseLoc::aDispCard);
 	bool dispCard;
 	p.getValue(dispCard);
 
 	// Get Local position of the Shape node
 	// Get local Pos X
-	p = MPlug(footprintNode, BaseLoc::localPositionX);
+	p = MPlug(o_BaseLocNode, BaseLoc::localPositionX);
 	double localPosX;
 	p.getValue(localPosX);
 
 	// Get local Pos Y
-	p = MPlug(footprintNode, BaseLoc::localPositionY);
+	p = MPlug(o_BaseLocNode, BaseLoc::localPositionY);
 	double localPosY;
 	p.getValue(localPosY);
 
 	// Get local Pos Z
-	p = MPlug(footprintNode, BaseLoc::localPositionZ);
+	p = MPlug(o_BaseLocNode, BaseLoc::localPositionZ);
 	double localPosZ;
 	p.getValue(localPosZ);
 
 	// Calculate offset Matrix
 
 	// Get offsetX
-	p = MPlug(footprintNode, BaseLoc::aOffsetX);
+	p = MPlug(o_BaseLocNode, BaseLoc::aOffsetX);
 	double offsetX;
 	p.getValue(offsetX);
 
 	// Get offsetY
-	p = MPlug(footprintNode, BaseLoc::aOffsetY);
+	p = MPlug(o_BaseLocNode, BaseLoc::aOffsetY);
 	double offsetY;
 	p.getValue(offsetY);
 
 	// Get offsetZ
-	p = MPlug(footprintNode, BaseLoc::aOffsetZ);
+	p = MPlug(o_BaseLocNode, BaseLoc::aOffsetZ);
 	double offsetZ;
 	p.getValue(offsetZ);
 
 	// Get rotateX
-	p = MPlug(footprintNode, BaseLoc::aRotateX);
+	p = MPlug(o_BaseLocNode, BaseLoc::aRotateX);
 	double rotateX;
 	p.getValue(rotateX);
 
 	// Get rotateY
-	p = MPlug(footprintNode, BaseLoc::aRotateY);
+	p = MPlug(o_BaseLocNode, BaseLoc::aRotateY);
 	double rotateY;
 	p.getValue(rotateY);
 
 	// Get rotateZ
-	p = MPlug(footprintNode, BaseLoc::aRotateZ);
+	p = MPlug(o_BaseLocNode, BaseLoc::aRotateZ);
 	double rotateZ;
 	p.getValue(rotateZ);
 
 	// Get scaleX
-	p = MPlug(footprintNode, BaseLoc::aScaleX);
+	p = MPlug(o_BaseLocNode, BaseLoc::aScaleX);
 	double scaleX;
 	p.getValue(scaleX);
 
 	// Get scaleY
-	p = MPlug(footprintNode, BaseLoc::aScaleY);
+	p = MPlug(o_BaseLocNode, BaseLoc::aScaleY);
 	double scaleY;
 	p.getValue(scaleY);
 
 	// Get scaleZ
-	p = MPlug(footprintNode, BaseLoc::aScaleZ);
+	p = MPlug(o_BaseLocNode, BaseLoc::aScaleZ);
 	double scaleZ;
 	p.getValue(scaleZ);
 
 	double scale[3] = {scaleX,scaleY,scaleZ};
 
 	// Get draw preset
-	p = MPlug(footprintNode, BaseLoc::aDrawPresets);
+	p = MPlug(o_BaseLocNode, BaseLoc::aDrawPresets);
 	int drawPresets;
 	p.getValue(drawPresets);
 
@@ -1468,6 +1515,44 @@ MBoundingBox BaseLocOverride::boundingBox( const MDagPath& objPath, const MDagPa
 		corner1 += offV;
 		corner2 += offV;
 	}
+
+
+	// IF file is selected as preset return the read BB corners immediately
+	if (drawPresets == 11)
+	{
+		//MGlobal::displayInfo(MString() + objPath.partialPathName());
+
+		// Get BB A
+		p = MPlug(o_BaseLocNode, BaseLoc::aBoundingBoxA);
+		MFnNumericData numdFn_BBA(p.asMObject());
+		float v3fVal_BBA[3];
+		numdFn_BBA.getData3Float(v3fVal_BBA[0], v3fVal_BBA[1], v3fVal_BBA[2]);
+
+		p = MPlug(o_BaseLocNode, BaseLoc::aBoundingBoxB);
+		MFnNumericData numdFn_BBB(p.asMObject());
+		float v3fVal_BBB[3];
+		numdFn_BBB.getData3Float(v3fVal_BBB[0], v3fVal_BBB[1], v3fVal_BBB[2]);
+
+		corner1 = MPoint(v3fVal_BBA[0], v3fVal_BBA[1], v3fVal_BBA[2]);
+		corner2 = MPoint(v3fVal_BBB[0], v3fVal_BBB[1], v3fVal_BBB[2]);
+
+		corner1 = corner1 *multiplier;
+		corner2 = corner2 *multiplier;
+
+		corner1 *= rM;
+		corner2 *= rM;
+
+		corner1 *= m_modelViewMat.inverse();
+		corner2 *= m_modelViewMat.inverse();
+
+
+		corner1 += offV;
+		corner2 += offV;
+
+		
+	}
+
+
 
 	return MBoundingBox( corner1, corner2 );
 }
@@ -3332,6 +3417,16 @@ MStatus BaseLoc::initialize()
 	tAttr.setStorable(true);
 	tAttr.setInternal(true);
 	addAttribute( aInTriangleArray );
+
+	aBoundingBoxA = nAttr.create( "boundingBoxA", "boundingBoxA", MFnNumericData::k3Float );
+	nAttr.setStorable(true);
+	nAttr.setInternal(true);
+	addAttribute( aBoundingBoxA );
+
+	aBoundingBoxB = nAttr.create( "boundingBoxB", "boundingBoxB", MFnNumericData::k3Float );
+	nAttr.setStorable(true);
+	nAttr.setInternal(true);
+	addAttribute( aBoundingBoxB );
 
 
 	return MS::kSuccess;
