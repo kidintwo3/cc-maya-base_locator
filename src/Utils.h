@@ -221,7 +221,7 @@ MStatus load_locatorData(MString &s_pathName, MString &s_presetName, MObject &o_
 
 
 
-MStatus save_locatorData(MString &s_pathName, MString &s_presetName, MString &s_lineA, MString &s_triangleA)
+MStatus save_locatorData(MString &s_pathName, MString &s_presetName, MString &s_lineA, MString &s_triangleA, double &d_offset)
 {
 
 	// Locator data
@@ -276,14 +276,29 @@ MStatus save_locatorData(MString &s_pathName, MString &s_presetName, MString &s_
 				MItMeshEdge mitEdge(objectPath_shape, component, &status);
 				CHECK_MSTATUS_AND_RETURN_IT(status);
 
+
+
 				for ( ; !mitEdge.isDone(); mitEdge.next() )
 				{
+
+					
 
 					MPoint edgeVert_A = mitEdge.point(0, MSpace::kObject, &status);
 					CHECK_MSTATUS_AND_RETURN_IT(status);
 
 					MPoint edgeVert_B = mitEdge.point(1, MSpace::kObject, &status);
 					CHECK_MSTATUS_AND_RETURN_IT(status);
+
+					//int numConnE;
+					//mitEdge.numConnectedEdges(numConnE);
+
+					//if (numConnE != 0)
+					//{
+					//	MIntArray edges;
+					//	mitEdge.getConnectedEdges(edges, &status);
+					//	CHECK_MSTATUS_AND_RETURN_IT(status);
+
+					//}
 
 					s_lineA += MString() + edgeVert_A.x + "," + edgeVert_A.y + "," + edgeVert_A.z + ",";
 					s_lineA += MString() + edgeVert_B.x + "," + edgeVert_B.y + "," + edgeVert_B.z + ",";

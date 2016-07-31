@@ -45,6 +45,8 @@ MSyntax BaseLocCommand::newSyntax()
 	syntax.addFlag( "-ry", "-rotatey", MSyntax::kDouble );
 	syntax.addFlag( "-rz", "-rotatez", MSyntax::kDouble );
 
+	syntax.addFlag( "-of", "-offset", MSyntax::kDouble  );
+
 	syntax.addFlag( "-sp", "-savePreset", MSyntax::kString  );
 	syntax.addFlag( "-lp", "-loadPreset", MSyntax::kString  );
 
@@ -55,8 +57,7 @@ MSyntax BaseLocCommand::newSyntax()
 	syntax.addFlag( "-la", "-lineArray", MSyntax::kString  );
 	syntax.addFlag( "-ta", "-triangleArray", MSyntax::kString  );
 
-	//syntax.setObjectType( MSyntax::kSelectionList, 1, 1 );
-	//syntax.useSelectionAsDefault( true );
+	
 
 	syntax.enableEdit( false );
 	syntax.enableQuery( false );
@@ -85,6 +86,8 @@ MStatus BaseLocCommand::doIt( const MArgList& argList )
 	double d_rotY = 0.0;
 	double d_rotZ = 0.0;
 
+	double d_offset = 0.0;
+
 	MString s_lineA;
 	MString s_triangleA;
 
@@ -103,6 +106,8 @@ MStatus BaseLocCommand::doIt( const MArgList& argList )
 	if ( argData.isFlagSet( "rotatex" ) ) { d_rotX = argData.flagArgumentDouble("rotatex",0); }
 	if ( argData.isFlagSet( "rotatey" ) ) { d_rotY = argData.flagArgumentDouble("rotatey",0); }
 	if ( argData.isFlagSet( "rotatez" ) ) { d_rotZ = argData.flagArgumentDouble("rotatez",0); }
+
+	if ( argData.isFlagSet( "offset" ) ) { d_offset = argData.flagArgumentDouble("offset",0); }
 
 	if ( argData.isFlagSet( "lineArray" ) ) { s_lineA = argData.flagArgumentString("lineArray",0); }
 	if ( argData.isFlagSet( "triangleArray" ) ) { s_triangleA = argData.flagArgumentString("triangleArray",0); }
@@ -138,7 +143,7 @@ MStatus BaseLocCommand::doIt( const MArgList& argList )
 
 		argData.getFlagArgument("presetPath", 0, s_pPath);
 
-		save_locatorData(s_pPath, s_presetName, s_lineA, s_triangleA);
+		save_locatorData(s_pPath, s_presetName, s_lineA, s_triangleA, d_offset);
 
 		// Refresh plugs + AE Template
 		MGlobal::executeCommand("dgdirty " + s_baseLocNodeName);
