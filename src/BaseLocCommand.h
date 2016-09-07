@@ -2,9 +2,9 @@
 #define BaseLocCommand_H
 
 #ifdef __linux__ 
-    #include <maya/MArgDatabase.h>
+#include <maya/MArgDatabase.h>
 #else
-    #include <maya/MArgDataBase.h>
+#include <maya/MArgDataBase.h>
 #endif
 #include <maya/MDagPath.h>
 #include <maya/MDGModifier.h>
@@ -35,26 +35,57 @@
 class BaseLocCommand : public MPxCommand
 {
 public:
-    BaseLocCommand();
-    virtual MStatus doIt( const MArgList& argList );
-    virtual MStatus redoIt();
-    virtual MStatus undoIt();
-    virtual bool isUndoable() const;
-    static void* creator();
-    static MSyntax newSyntax();
+	BaseLocCommand();
+	virtual MStatus			doIt( const MArgList& argList );
+	virtual MStatus			redoIt();
+	virtual MStatus			undoIt();
+	virtual bool			isUndoable() const;
+	static void*			creator();
+	static MSyntax			newSyntax();
 
-	void setResult();
+	void					setResult();
 
 private:
 
-	MDagModifier m_DAGMod;
-	MDGModifier m_DGMod;
-	MFnDependencyNode m_DEPNode;
+	MStatus					getShapeNodeFromTransformDAG(MDagPath& path);
+	MStatus					createLocator(MArgDatabase& argData);
 
-	MDagPath p_locTr;
-	MDagPath p_Shape;
+	MDagModifier			m_DAGMod;
+	MDGModifier				m_DGMod;
+	MFnDependencyNode		m_DEPNode;
 
-	MObject o_baseLocNode;
+	MDagPath				dag_LocATr;
+	MDagPath				dag_LocAShape;
+
+	MObject					o_baseLocNode;
+	MObjectArray			o_baseLocNodeA;
+
+
+	// Presets
+
+	int						i_preset;
+	int						i_icontype;
+	int						i_color;
+	double					d_radius;
+
+	double					d_offX;
+	double					d_offY;
+	double					d_offZ;
+
+	double					d_rotX;
+	double					d_rotY;
+	double					d_rotZ;
+
+	double					d_scX;
+	double					d_scY;
+	double					d_scZ;
+
+	double					d_offset;
+
+	bool					b_boundingbox;
+
+	MString					s_locName;
+
 };
 
 

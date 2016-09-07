@@ -57,7 +57,7 @@ MSyntax BaseLocCommand::newSyntax()
 	syntax.addFlag( "-la", "-lineArray", MSyntax::kString  );
 	syntax.addFlag( "-ta", "-triangleArray", MSyntax::kString  );
 
-	
+	syntax.addFlag( "-bb", "-boundingBox", MSyntax::kBoolean  );
 
 	syntax.enableEdit( false );
 	syntax.enableQuery( false );
@@ -73,25 +73,35 @@ MStatus BaseLocCommand::doIt( const MArgList& argList )
 	MArgDatabase argData( syntax(), argList, &status );
 
 	// Presets
-	int i_preset = 0;
-	int i_icontype = 0;
-	int i_color = 1;
-	double d_radius = 1.0;
+	i_preset = 0;
+	i_icontype = 0;
+	i_color = 1;
+	d_radius = 1.0;
 
-	double d_offX = 0.0;
-	double d_offY = 0.0;
-	double d_offZ = 0.0;
+	d_offX = 0.0;
+	d_offY = 0.0;
+	d_offZ = 0.0;
 
-	double d_rotX = 0.0;
-	double d_rotY = 0.0;
-	double d_rotZ = 0.0;
+	d_rotX = 0.0;
+	d_rotY = 0.0;
+	d_rotZ = 0.0;
 
-	double d_offset = 0.0;
+	d_scX = 1.0;
+	d_scY = 1.0;
+	d_scZ = 1.0;
+
+	d_offset = 0.0;
+
+	b_boundingbox = false;
+
+	s_locName = MString("untitled");
+
+	o_baseLocNodeA.clear();
 
 	MString s_lineA;
 	MString s_triangleA;
 
-	MString s_locName("untitled");
+
 
 	if ( argData.isFlagSet( "name" ) ) { s_locName = argData.flagArgumentString("name",0); }
 	if ( argData.isFlagSet( "preset" ) ) { i_preset = argData.flagArgumentInt("preset",0); }
@@ -108,6 +118,8 @@ MStatus BaseLocCommand::doIt( const MArgList& argList )
 	if ( argData.isFlagSet( "rotatez" ) ) { d_rotZ = argData.flagArgumentDouble("rotatez",0); }
 
 	if ( argData.isFlagSet( "offset" ) ) { d_offset = argData.flagArgumentDouble("offset",0); }
+
+	if ( argData.isFlagSet( "boundingBox" ) ) { b_boundingbox = argData.flagArgumentBool("boundingBox",0); }
 
 	if ( argData.isFlagSet( "lineArray" ) ) { s_lineA = argData.flagArgumentString("lineArray",0); }
 	if ( argData.isFlagSet( "triangleArray" ) ) { s_triangleA = argData.flagArgumentString("triangleArray",0); }
@@ -204,6 +216,63 @@ MStatus BaseLocCommand::doIt( const MArgList& argList )
 
 
 
+	else if ( argData.isFlagSet( "boundingBox" ) )
+	{
+
+		MDagPath currDagPathTr;
+		MSelectionList selectedObjects;
+
+		MGlobal::getActiveSelectionList(selectedObjects);
+
+		// Get Meshes
+		for (unsigned int i = 0; i < selectedObjects.length(); i++)
+		{
+			selectedObjects.getDagPath(i, currDagPathTr);
+
+			if (currDagPathTr.apiType() == MFn::kTransform)
+			{
+
+				MDagPath currDagPathShape = currDagPathTr;
+
+				status = getShapeNodeFromTransformDAG(currDagPathShape);
+
+				if (status)
+				{
+
+
+					MFnMesh mfn_mesh(currDagPathShape);
+
+					MBoundingBox bb_currMesh = mfn_mesh.boundingBox(&status);
+					CHECK_MSTATUS_AND_RETURN_IT(status);
+
+					i_preset = 1;
+
+					d_scX = bb_currMesh.width();
+					d_scY = bb_currMesh.height();
+					d_scZ = bb_currMesh.depth();
+
+					BaseLocCommand::createLocator(argData);
+
+					MFnTransform fn_transform(currDagPathTr);
+
+					MMatrix currMat = fn_transform.transformationMatrix(&status);
+					CHECK_MSTATUS_AND_RETURN_IT(status);
+
+					MTransformationMatrix trMAt(currMat);
+
+					MFnTransform fn_transform_loc(dag_LocATr);
+					fn_transform_loc.set(trMAt);
+
+				}
+			}
+		}
+
+
+
+
+	}
+
+
 	// -----------------------------------------------------------------------------------------
 	// Just create a default BaseLoc
 	//
@@ -214,146 +283,210 @@ MStatus BaseLocCommand::doIt( const MArgList& argList )
 	else
 	{
 
+		BaseLocCommand::createLocator(argData);
 
-
-
-		// check results
-
-		if ( i_preset > 10 ) { i_preset = 10;	}
-		if ( i_icontype > 26)  { i_icontype = 26;}
-		if ( d_radius <= 0.0 ) { d_radius = 1.0;}
-
-		double r,g,b = 0.5;
-
-		switch ( i_color ) 
-		{
-
-		case 1: r = 1.0; g = 0.0; b = 0.0; break;
-		case 2: r = 0.0; g = 1.0; b = 0.0; break;
-		case 3: r = 0.0; g = 0.0; b = 1.0; break;
-		case 4: r = 0.0; g = 1.0; b = 1.0; break;
-		case 5: r = 1.0; g = 0.0; b = 1.0; break;
-		case 6: r = 1.0; g = 1.0; b = 0.0; break;
-		case 7: r = 0.5; g = 0.5; b = 0.5; break;
-		case 8: r = 1.0; g = 0.5; b = 0.5; break;
-		case 9: r = 0.5; g = 1.0; b = 0.5; break;
-		case 10: r = 1.0; g = 1.0; b = 1.0; break;
-
-		default:
-			r = 1.0; g = 1.0; b = 1.0;
-		}
-
-		// Create locator
-		o_baseLocNode = m_DEPNode.create("BaseLoc", &status);
-		CHECK_MSTATUS_AND_RETURN_IT(status);
-		MFnDependencyNode fnDepTrg( o_baseLocNode );
-
-		// Rename it
-		if (argData.isFlagSet( "-name" ))
-		{
-			fnDepTrg.setName( s_locName );
-			MPxCommand::setResult(fnDepTrg.name());
-
-		}
-
-
-		// Set plugs
-		MDagPath dag_LocATr;
-		MDagPath dag_LocAShape;
-		MDagPath dag_LocA;
-		MSelectionList sel_list;
-
-		status = sel_list.add(fnDepTrg.name());
-		CHECK_MSTATUS_AND_RETURN_IT(status);
-
-		status = sel_list.getDagPath(0,dag_LocA);
-		CHECK_MSTATUS_AND_RETURN_IT(status);
-
-		dag_LocATr = dag_LocA;
-		status = dag_LocA.extendToShape();
-		CHECK_MSTATUS_AND_RETURN_IT(status);
-
-		dag_LocAShape = dag_LocA;
-
-		MFnDependencyNode fnDepLocShape( dag_LocAShape.node() );
-
-		MPlug p_preset = fnDepLocShape.findPlug("presets", &status);
-		CHECK_MSTATUS_AND_RETURN_IT(status);
-		MPlug p_icontype = fnDepLocShape.findPlug("iconType", &status);
-		CHECK_MSTATUS_AND_RETURN_IT(status);
-		MPlug p_radius = fnDepLocShape.findPlug("radius", &status);
-		CHECK_MSTATUS_AND_RETURN_IT(status);
-
-		MPlug p_trX = fnDepLocShape.findPlug("offsetX", &status);
-		CHECK_MSTATUS_AND_RETURN_IT(status);
-		MPlug p_trY = fnDepLocShape.findPlug("offsetY", &status);
-		CHECK_MSTATUS_AND_RETURN_IT(status);
-		MPlug p_trZ = fnDepLocShape.findPlug("offsetZ", &status);
-		CHECK_MSTATUS_AND_RETURN_IT(status);
-
-		MPlug p_rotX = fnDepLocShape.findPlug("rotateX", &status);
-		CHECK_MSTATUS_AND_RETURN_IT(status);
-		MPlug p_rotY = fnDepLocShape.findPlug("rotateY", &status);
-		CHECK_MSTATUS_AND_RETURN_IT(status);
-		MPlug p_rotZ = fnDepLocShape.findPlug("rotateZ", &status);
-		CHECK_MSTATUS_AND_RETURN_IT(status);
-
-
-		MPlug p_lineColR = fnDepLocShape.findPlug("lineColorR", &status);
-		CHECK_MSTATUS_AND_RETURN_IT(status);
-		MPlug p_lineColG = fnDepLocShape.findPlug("lineColorG", &status);
-		CHECK_MSTATUS_AND_RETURN_IT(status);
-		MPlug p_lineColB = fnDepLocShape.findPlug("lineColorB", &status);
-		CHECK_MSTATUS_AND_RETURN_IT(status);
-
-		MPlug p_polyColR = fnDepLocShape.findPlug("polygonColorR", &status);
-		CHECK_MSTATUS_AND_RETURN_IT(status);
-		MPlug p_polyColG = fnDepLocShape.findPlug("polygonColorG", &status);
-		CHECK_MSTATUS_AND_RETURN_IT(status);
-		MPlug p_polyColB = fnDepLocShape.findPlug("polygonColorB", &status);
-		CHECK_MSTATUS_AND_RETURN_IT(status);
-
-
-		status = p_preset.setInt( i_preset );
-		CHECK_MSTATUS_AND_RETURN_IT(status);
-		status = p_icontype.setInt( i_icontype );
-		CHECK_MSTATUS_AND_RETURN_IT(status);
-		status = p_radius.setDouble( d_radius );
-		CHECK_MSTATUS_AND_RETURN_IT(status);
-
-		status = p_trX.setDouble( d_offX );
-		CHECK_MSTATUS_AND_RETURN_IT(status);
-		status = p_trY.setDouble( d_offY );
-		CHECK_MSTATUS_AND_RETURN_IT(status);
-		status = p_trZ.setDouble( d_offZ );
-		CHECK_MSTATUS_AND_RETURN_IT(status);
-
-		status = p_rotX.setDouble( d_rotX );
-		CHECK_MSTATUS_AND_RETURN_IT(status);
-		status = p_rotY.setDouble( d_rotY );
-		CHECK_MSTATUS_AND_RETURN_IT(status);
-		status = p_rotZ.setDouble( d_rotZ );
-		CHECK_MSTATUS_AND_RETURN_IT(status);
-
-		status = p_lineColR.setDouble(r);
-		CHECK_MSTATUS_AND_RETURN_IT(status);
-		status = p_lineColG.setDouble(g);
-		CHECK_MSTATUS_AND_RETURN_IT(status);
-		status = p_lineColB.setDouble(b);
-		CHECK_MSTATUS_AND_RETURN_IT(status);
-
-		status = p_polyColR.setDouble(r - 0.5);
-		CHECK_MSTATUS_AND_RETURN_IT(status);
-		status = p_polyColG.setDouble(g - 0.5);
-		CHECK_MSTATUS_AND_RETURN_IT(status);
-		status = p_polyColB.setDouble(b - 0.5);
-		CHECK_MSTATUS_AND_RETURN_IT(status);
 
 	}
 
 	// BaseLocCommand -pa  "0.5,0.5,0.5,0.5,-0.5,0.5,0.5,-0.5,-0.5,0.5,0.5,-0.5,0.5,0.5,0.5,0.5,0.5,-0.5,-0.5,0.5,-0.5,-0.5,0.5,0.5,0.5,0.5,0.5,0.0,0.0,0.0,0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,0.5,-0.5,0.0,0.0,0.0,-0.5,-0.5,-0.5,-0.5,-0.5,0.5,-0.5,0.5,0.5,0.0,0.0,0.0,-0.5,-0.5,0.5,0.5,-0.5,0.5" -ta "-0.5,-0.5,0.5,0.5,-0.5,0.5,-0.5,0.5,0.5,-0.5,0.5,0.5,0.5,-0.5,0.5,0.5,0.5,0.5,-0.5,0.5,0.5,0.5,0.5,0.5,-0.5,0.5,-0.5,-0.5,0.5,-0.5,0.5,0.5,0.5,0.5,0.5,-0.5,-0.5,0.5,-0.5,0.5,0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,0.5,0.5,-0.5,0.5,-0.5,-0.5,-0.5,-0.5,-0.5,0.5,-0.5,-0.5,-0.5,-0.5,0.5,-0.5,-0.5,0.5,0.5,-0.5,-0.5,0.5,-0.5,0.5,0.5,-0.5,0.5,0.5,-0.5,-0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,-0.5,-0.5,0.5,0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,0.5,-0.5,0.5,-0.5,-0.5,0.5,-0.5,-0.5,-0.5,0.5,-0.5,0.5,0.5";
 
 	return redoIt();
+}
+
+
+MStatus BaseLocCommand::createLocator(MArgDatabase& argData)
+{
+	MStatus status;
+
+
+	// check results
+
+	if ( i_preset > 10 ) { i_preset = 10;	}
+	if ( i_icontype > 26)  { i_icontype = 26;}
+	if ( d_radius <= 0.0 ) { d_radius = 1.0;}
+
+	double r,g,b = 0.5;
+
+	switch ( i_color ) 
+	{
+
+	case 1: r = 1.0; g = 0.0; b = 0.0; break;
+	case 2: r = 0.0; g = 1.0; b = 0.0; break;
+	case 3: r = 0.0; g = 0.0; b = 1.0; break;
+	case 4: r = 0.0; g = 1.0; b = 1.0; break;
+	case 5: r = 1.0; g = 0.0; b = 1.0; break;
+	case 6: r = 1.0; g = 1.0; b = 0.0; break;
+	case 7: r = 0.5; g = 0.5; b = 0.5; break;
+	case 8: r = 1.0; g = 0.5; b = 0.5; break;
+	case 9: r = 0.5; g = 1.0; b = 0.5; break;
+	case 10: r = 1.0; g = 1.0; b = 1.0; break;
+
+	default:
+		r = 1.0; g = 1.0; b = 1.0;
+	}
+
+	// Create locator
+	o_baseLocNode = m_DEPNode.create("BaseLoc", &status);
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+	MFnDependencyNode fnDepTrg( o_baseLocNode );
+
+	o_baseLocNodeA.append(o_baseLocNode);
+
+	// Rename it
+	if (argData.isFlagSet( "-name" ))
+	{
+		fnDepTrg.setName( s_locName );
+		MPxCommand::setResult(fnDepTrg.name());
+
+	}
+
+
+	// Set plugs
+	MDagPath dag_LocA;
+	MSelectionList sel_list;
+
+	status = sel_list.add(fnDepTrg.name());
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+
+	status = sel_list.getDagPath(0,dag_LocA);
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+
+	dag_LocATr = dag_LocA;
+	status = dag_LocA.extendToShape();
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+
+	dag_LocAShape = dag_LocA;
+
+	MFnDependencyNode fnDepLocShape( dag_LocAShape.node() );
+
+	MPlug p_preset = fnDepLocShape.findPlug("presets", &status);
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+	MPlug p_icontype = fnDepLocShape.findPlug("iconType", &status);
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+	MPlug p_radius = fnDepLocShape.findPlug("radius", &status);
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+
+	MPlug p_trX = fnDepLocShape.findPlug("offsetX", &status);
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+	MPlug p_trY = fnDepLocShape.findPlug("offsetY", &status);
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+	MPlug p_trZ = fnDepLocShape.findPlug("offsetZ", &status);
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+
+	MPlug p_rotX = fnDepLocShape.findPlug("rotateX", &status);
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+	MPlug p_rotY = fnDepLocShape.findPlug("rotateY", &status);
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+	MPlug p_rotZ = fnDepLocShape.findPlug("rotateZ", &status);
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+
+	MPlug p_scX = fnDepLocShape.findPlug("scaleX", &status);
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+	MPlug p_scY = fnDepLocShape.findPlug("scaleY", &status);
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+	MPlug p_scZ = fnDepLocShape.findPlug("scaleZ", &status);
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+
+
+	MPlug p_lineColR = fnDepLocShape.findPlug("lineColorR", &status);
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+	MPlug p_lineColG = fnDepLocShape.findPlug("lineColorG", &status);
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+	MPlug p_lineColB = fnDepLocShape.findPlug("lineColorB", &status);
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+
+	MPlug p_polyColR = fnDepLocShape.findPlug("polygonColorR", &status);
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+	MPlug p_polyColG = fnDepLocShape.findPlug("polygonColorG", &status);
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+	MPlug p_polyColB = fnDepLocShape.findPlug("polygonColorB", &status);
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+
+
+	status = p_preset.setInt( i_preset );
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+	status = p_icontype.setInt( i_icontype );
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+	status = p_radius.setDouble( d_radius );
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+
+	status = p_trX.setDouble( d_offX );
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+	status = p_trY.setDouble( d_offY );
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+	status = p_trZ.setDouble( d_offZ );
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+
+	status = p_rotX.setDouble( d_rotX );
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+	status = p_rotY.setDouble( d_rotY );
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+	status = p_rotZ.setDouble( d_rotZ );
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+
+	status = p_scX.setDouble(d_scX);
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+	status = p_scY.setDouble(d_scY);
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+	status = p_scZ.setDouble(d_scZ);
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+
+	status = p_lineColR.setDouble(r);
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+	status = p_lineColG.setDouble(g);
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+	status = p_lineColB.setDouble(b);
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+
+	status = p_polyColR.setDouble(r - 0.5);
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+	status = p_polyColG.setDouble(g - 0.5);
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+	status = p_polyColB.setDouble(b - 0.5);
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+
+	return MS::kSuccess;
+}
+
+
+
+MStatus BaseLocCommand::getShapeNodeFromTransformDAG(MDagPath& path)
+{
+	MStatus status;
+
+	if (path.apiType() == MFn::kMesh)
+	{
+		return MS::kSuccess;
+	}
+
+	unsigned int numShapes;
+	status = path.numberOfShapesDirectlyBelow(numShapes);
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+
+	for (unsigned int i = 0; i < numShapes; ++i)
+	{
+		status = path.extendToShapeDirectlyBelow(i);
+		CHECK_MSTATUS_AND_RETURN_IT(status);
+
+		if (!path.hasFn(MFn::kMesh))
+		{
+			path.pop();
+			continue;
+		}
+
+		MFnDagNode fnNode(path, &status);
+		CHECK_MSTATUS_AND_RETURN_IT(status);
+		if (!fnNode.isIntermediateObject())
+		{
+			return MS::kSuccess;
+		}
+		path.pop();
+	}
+
+	//MGlobal::displayWarning(MString() + "Selection is not a mesh");
+
+	return MS::kFailure;
+
 }
 
 MStatus BaseLocCommand::redoIt()
@@ -384,16 +517,21 @@ MStatus BaseLocCommand::undoIt()
 
 	// Delete locator
 
-	if ( !o_baseLocNode.isNull() )
+	for (int i = 0; i < o_baseLocNodeA.length(); i++)
 	{
-		MGlobal::displayInfo(MString() + "[BaseLocNode] Deleting nodes");
 
-		status = m_DAGMod.deleteNode(o_baseLocNode);
-		CHECK_MSTATUS_AND_RETURN_IT(status);
-		m_DAGMod.doIt();
+		if ( !o_baseLocNodeA[i].isNull() )
+		{
+			MGlobal::displayInfo(MString() + "[BaseLocNode] Deleting nodes");
+
+			status = m_DAGMod.deleteNode(o_baseLocNodeA[i]);
+			CHECK_MSTATUS_AND_RETURN_IT(status);
+			m_DAGMod.doIt();
 
 
+		}
 	}
+
 
 
 	return MS::kSuccess;
