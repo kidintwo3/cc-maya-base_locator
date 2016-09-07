@@ -75,7 +75,7 @@ MStatus BaseLocCommand::doIt( const MArgList& argList )
 	// Presets
 	i_preset = 0;
 	i_icontype = 0;
-	i_color = 1;
+	i_color = 7;
 	d_radius = 1.0;
 
 	d_offX = 0.0;
@@ -239,8 +239,40 @@ MStatus BaseLocCommand::doIt( const MArgList& argList )
 				if (status)
 				{
 
+					MFnTransform fn_transform(currDagPathTr);
+
+					MPoint rot_piv = fn_transform.rotatePivot(MSpace::kWorld);
+					MPoint scale_piv = fn_transform.scalePivot(MSpace::kWorld);
+
+					MMatrix currMat = fn_transform.transformationMatrix(&status);
+					CHECK_MSTATUS_AND_RETURN_IT(status);
+
 
 					MFnMesh mfn_mesh(currDagPathShape);
+
+					MPointArray pA;
+					mfn_mesh.getPoints(pA,MSpace::kWorld);
+
+					if (pA.length() == 0)
+					{
+						MGlobal::displayWarning(MString() + "[BaseLoc] " + currDagPathShape.partialPathName() + " - Does not have any points...");
+						return::MStatus::kSuccess;
+					}
+
+					//double pX = 0.0;
+					//double pY = 0.0;
+					//double pZ = 0.0;
+
+					//for (int i = 0; i < pA.length(); i++)
+					//{
+					//	pX += pA[i].x;
+					//	pY += pA[i].y;
+					//	pZ += pA[i].z;
+					//}
+
+					//MVector centerP(pX/double(pA.length()), pY/double(pA.length()), pZ/double(pA.length()));
+
+					//
 
 					MBoundingBox bb_currMesh = mfn_mesh.boundingBox(&status);
 					CHECK_MSTATUS_AND_RETURN_IT(status);
@@ -251,14 +283,14 @@ MStatus BaseLocCommand::doIt( const MArgList& argList )
 					d_scY = bb_currMesh.height();
 					d_scZ = bb_currMesh.depth();
 
+					// MGlobal::displayInfo(MString() + bb_currMesh.center().x + "," + bb_currMesh.center().y + "," + bb_currMesh.center().z);
+
 					BaseLocCommand::createLocator(argData);
 
-					MFnTransform fn_transform(currDagPathTr);
-
-					MMatrix currMat = fn_transform.transformationMatrix(&status);
-					CHECK_MSTATUS_AND_RETURN_IT(status);
+					
 
 					MTransformationMatrix trMAt(currMat);
+					// trMAt.setTranslation(centerP, MSpace::kWorld);
 
 					MFnTransform fn_transform_loc(dag_LocATr);
 					fn_transform_loc.set(trMAt);
