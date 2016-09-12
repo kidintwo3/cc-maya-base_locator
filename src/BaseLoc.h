@@ -301,12 +301,12 @@ private:
 	static void OnModelEditorChanged(void *clientData);
 	MCallbackId fModelEditorChangedCbId;
 
+	BaseLoc* fBaseLoc;
 
 	MMatrix m_modelViewMat;
 	MPoint m_bbCorner1;
 	MPoint m_bbCorner2;
 
-	BaseLoc* fBaseLoc;
 };
 
 
