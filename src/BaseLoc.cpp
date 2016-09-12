@@ -110,8 +110,34 @@ void BaseLoc::postConstructor()
 
 void* BaseLoc::creator() { return new BaseLoc(); }
 
-BaseLocOverride::BaseLocOverride(const MObject& obj) : MHWRender::MPxDrawOverride(obj, BaseLocOverride::draw){}
-BaseLocOverride::~BaseLocOverride(){}
+BaseLocOverride::BaseLocOverride(const MObject& obj) : MHWRender::MPxDrawOverride(obj, BaseLocOverride::draw, false)
+{
+	fModelEditorChangedCbId = MEventMessage::addEventCallback("modelEditorChanged", OnModelEditorChanged, this);
+	MStatus status;
+	MFnDependencyNode node(obj, &status);
+
+	fBaseLoc = status ? dynamic_cast<BaseLoc*>(node.userNode()):NULL;
+}
+
+BaseLocOverride::~BaseLocOverride()
+{
+	fBaseLoc = NULL;
+	if (fModelEditorChangedCbId != 0)
+	{
+		MMessage::removeCallback(fModelEditorChangedCbId);
+		fModelEditorChangedCbId = 0;
+	}
+}
+
+void BaseLocOverride::OnModelEditorChanged(void *clientData)
+{
+	BaseLocOverride *ovr = static_cast<BaseLocOverride*>(clientData);
+
+	if (ovr && ovr->fBaseLoc)
+	{
+		MHWRender::MRenderer::setGeometryDrawDirty(ovr->fBaseLoc->thisMObject());
+	}
+}
 
 // ----------------------------------------------------------------------------------------------------------------------------------------------------
 

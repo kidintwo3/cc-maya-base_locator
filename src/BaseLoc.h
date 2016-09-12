@@ -33,6 +33,8 @@
 #include <maya/MFileObject.h>
 #include <maya/MFileIO.h>
 #include <maya/MFnPointArrayData.h>
+#include <maya/MCallbackIdArray.h>
+#include <maya/MEventMessage.h>
 
 // Viewport 2.0 includes
 #include <maya/MDrawRegistry.h>
@@ -296,12 +298,15 @@ private:
 
 	BaseLocOverride(const MObject& obj);
 
+	static void OnModelEditorChanged(void *clientData);
+	MCallbackId fModelEditorChangedCbId;
+
 
 	MMatrix m_modelViewMat;
 	MPoint m_bbCorner1;
 	MPoint m_bbCorner2;
 
-
+	BaseLoc* fBaseLoc;
 };
 
 
