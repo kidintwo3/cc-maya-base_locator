@@ -94,6 +94,7 @@ MStatus BaseLocCommand::doIt( const MArgList& argList )
 
 	b_boundingbox = false;
 
+
 	s_locName = MString("untitled");
 
 	o_baseLocNodeA.clear();
@@ -174,7 +175,7 @@ MStatus BaseLocCommand::doIt( const MArgList& argList )
 	// BaseLocCommand -lp "box" -pp "p:/Maya/GitHub/cc-maya-base_locator/presets/" -bl "BaseLoc1";
 	//
 
-	else if ( argData.isFlagSet( "loadPreset" ) )
+	if ( argData.isFlagSet( "loadPreset" ) )
 	{
 		MString s_presetName;
 		MString s_baseLocNodeName;
@@ -215,8 +216,10 @@ MStatus BaseLocCommand::doIt( const MArgList& argList )
 	}
 
 
+	MSelectionList selObj;
+	MGlobal::getActiveSelectionList(selObj);
 
-	else if ( argData.isFlagSet( "boundingBox" ) )
+	if (selObj.length() != 0 || argData.isFlagSet( "boundingBox" ))
 	{
 
 		MDagPath currDagPathTr;
@@ -232,12 +235,16 @@ MStatus BaseLocCommand::doIt( const MArgList& argList )
 			if (currDagPathTr.apiType() == MFn::kTransform)
 			{
 
+				
+
 				MDagPath currDagPathShape = currDagPathTr;
 
 				status = getShapeNodeFromTransformDAG(currDagPathShape);
 
 				if (status)
 				{
+
+					
 
 					MFnTransform fn_transform(currDagPathTr);
 
@@ -300,7 +307,7 @@ MStatus BaseLocCommand::doIt( const MArgList& argList )
 		}
 
 
-
+		return::MStatus::kSuccess;
 
 	}
 
@@ -312,7 +319,7 @@ MStatus BaseLocCommand::doIt( const MArgList& argList )
 	//
 
 
-	else
+	if (selObj.length() == 0)
 	{
 
 		BaseLocCommand::createLocator(argData);

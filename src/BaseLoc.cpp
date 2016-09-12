@@ -110,6 +110,9 @@ void BaseLoc::postConstructor()
 
 void* BaseLoc::creator() { return new BaseLoc(); }
 
+
+#if MAYA_API_VERSION > 201600
+
 BaseLocOverride::BaseLocOverride(const MObject& obj) : MHWRender::MPxDrawOverride(obj, BaseLocOverride::draw, false)
 {
 	fModelEditorChangedCbId = MEventMessage::addEventCallback("modelEditorChanged", OnModelEditorChanged, this);
@@ -118,6 +121,20 @@ BaseLocOverride::BaseLocOverride(const MObject& obj) : MHWRender::MPxDrawOverrid
 
 	fBaseLoc = status ? dynamic_cast<BaseLoc*>(node.userNode()):NULL;
 }
+
+#else
+
+BaseLocOverride::BaseLocOverride(const MObject& obj) : MHWRender::MPxDrawOverride(obj, BaseLocOverride::draw)
+{
+	fModelEditorChangedCbId = MEventMessage::addEventCallback("modelEditorChanged", OnModelEditorChanged, this);
+	MStatus status;
+	MFnDependencyNode node(obj, &status);
+
+	fBaseLoc = status ? dynamic_cast<BaseLoc*>(node.userNode()):NULL;
+}
+#endif
+
+
 
 BaseLocOverride::~BaseLocOverride()
 {
@@ -166,7 +183,7 @@ MStatus BaseLoc::checkPresetFolder()
 
 			myfile.close();
 
-			MGlobal::displayInfo(MString() + "[BaseLoc] pBaseLoc.cfg path: " + s_readPluginPath );
+			// MGlobal::displayInfo(MString() + "[BaseLoc] pBaseLoc.cfg path: " + s_readPluginPath );
 			o_presetPath.setRawFullName(s_readPluginPath);
 
 
@@ -1292,7 +1309,7 @@ MBoundingBox BaseLoc::boundingBox() const
 		corner1 += offV;
 		corner2 += offV;
 
-		
+
 	}
 
 
@@ -1575,7 +1592,7 @@ MBoundingBox BaseLocOverride::boundingBox( const MDagPath& objPath, const MDagPa
 		corner1 += offV;
 		corner2 += offV;
 
-		
+
 	}
 
 
