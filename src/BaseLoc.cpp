@@ -87,7 +87,7 @@ MObject		BaseLoc::aInTriangleArray;
 MObject		BaseLoc::aBoundingBoxA;
 MObject		BaseLoc::aBoundingBoxB;
 
-MString		BaseLoc::drawDbClassification("drawdb/geometry/BaseLoc/includePostEffects/isTransparent");
+MString		BaseLoc::drawDbClassification("drawdb/geometry/BaseLoc");
 MString		BaseLoc::drawRegistrantId("BaseLocPlugin");
 
 MStringArray BaseLocData::m_fFontList;
@@ -155,13 +155,6 @@ void BaseLocOverride::OnModelEditorChanged(void *clientData)
 		MHWRender::MRenderer::setGeometryDrawDirty(ovr->fBaseLoc->thisMObject());
 	}
 }
-
-
-bool BaseLoc::isTransparent() const
-{
-	return true;
-}
-
 
 // ----------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -1346,7 +1339,6 @@ MHWRender::DrawAPI BaseLocOverride::supportedDrawAPIs() const
 #if MAYA_API_VERSION > 201600
 
 	return (MHWRender::kOpenGL | MHWRender::kDirectX11 | MHWRender::kOpenGLCoreProfile );
-	// return MHWRender::kAllDevices;
 
 #else
 	return (MHWRender::kOpenGL | MHWRender::kDirectX11 );
@@ -1610,11 +1602,7 @@ MBoundingBox BaseLocOverride::boundingBox( const MDagPath& objPath, const MDagPa
 
 
 // Called by Maya each time the object needs to be drawn.
-MUserData* BaseLocOverride::prepareForDraw( 
-	const MDagPath& objPath,   
-	const MDagPath& cameraPath,
-	const MHWRender::MFrameContext& frameContext,
-	MUserData* oldData)
+MUserData* BaseLocOverride::prepareForDraw( const MDagPath& objPath, const MDagPath& cameraPath, const MHWRender::MFrameContext& frameContext, MUserData* oldData)
 {
 
 
@@ -2119,32 +2107,18 @@ MUserData* BaseLocOverride::prepareForDraw(
 		data->m_locDrawPoints.clear();
 		int division = 50;
 
-
 		for (double i = 0; i < 2 * M_PI; i += M_PI / division)
 		{
 			MPoint circlePoint = MPoint(cos(i) * (r*0.5), 0.0, sin(i) * (r*0.5));
 			circlePoint *= rM;
 			MVector circlePointVector(circlePoint);
-
-			if(data->m_orient)
-			{
-
-				MEulerRotation rotOffEuler ( ( M_PI / 180.0 ), 0.0,  0.0, MEulerRotation::kXYZ );
-				MTransformationMatrix rotOffTMatrix;
-
-				rotOffTMatrix.rotateBy(rotOffEuler, MSpace::kObject);
-
-				circlePointVector *= rotOffTMatrix.asMatrix();
-				circlePointVector *= m_modelViewMat.inverse();
-
-			}
-
 			circlePointVector += offV;
 
-
-
 			data->m_locDrawPoints.append(circlePointVector);
+
 		}
+
+
 
 
 
@@ -2155,30 +2129,18 @@ MUserData* BaseLocOverride::prepareForDraw(
 		{
 			MPoint circlePoint = MPoint(cos(i) * (r*0.5), 0.0, sin(i) * (r*0.5));
 
-
 			circlePoint *= rM;
 			MVector circlePointVector(circlePoint);
-
-
-			if(data->m_orient)
-			{
-
-				MEulerRotation rotOffEuler ( ( M_PI / 180.0 ), 0.0,  0.0, MEulerRotation::kXYZ );
-				MTransformationMatrix rotOffTMatrix;
-
-				rotOffTMatrix.rotateBy(rotOffEuler, MSpace::kObject);
-
-				circlePointVector *= rotOffTMatrix.asMatrix();
-				circlePointVector *= m_modelViewMat.inverse();
-
-			}
-
-
 			circlePointVector += offV;
 
-			data->m_locDrawTriangles.append(circlePointVector);
-		}
+			MPoint centerP(MPoint::origin);
+			centerP *= rM;
+			centerP += offV;
 
+			data->m_locDrawTriangles.append(circlePointVector);
+			data->m_locDrawTriangles.append(centerP);
+
+		}
 
 	}
 
@@ -2191,41 +2153,10 @@ MUserData* BaseLocOverride::prepareForDraw(
 
 		data->m_locDrawTriangles.clear();
 
-		data->m_locDrawTriangles.append( (MPoint( 0.5f*r, -0.5f*r, 0.5f*r)*rM).x + offV.x, (MPoint( 0.5f*r, -0.5f*r, 0.5f*r)*rM).y + offV.y,(MPoint( 0.5f*r, -0.5f*r, 0.5f*r)*rM).z + offV.z );
-		data->m_locDrawTriangles.append( (MPoint(  0.5f*r,  0.5f*r, 0.5f*r)*rM).x + offV.x, (MPoint(  0.5f*r,  0.5f*r, 0.5f*r)*rM).y + offV.y, (MPoint(  0.5f*r,  0.5f*r, 0.5f*r)*rM).z + offV.z );
-		data->m_locDrawTriangles.append( (MPoint( -0.5f*r,  0.5f*r, 0.5f*r)*rM).x + offV.x, (MPoint( -0.5f*r,  0.5f*r, 0.5f*r)*rM).y + offV.y,(MPoint( -0.5f*r,  0.5f*r, 0.5f*r)*rM).z + offV.z);
-		data->m_locDrawTriangles.append( (MPoint( -0.5f*r, -0.5f*r, 0.5f*r)*rM).x + offV.x,  (MPoint( -0.5f*r, -0.5f*r, 0.5f*r)*rM).y + offV.y,  (MPoint( -0.5f*r, -0.5f*r, 0.5f*r)*rM).z + offV.z );
-
-		// Purple side - RIGHT
-		data->m_locDrawTriangles.append( (MPoint( 0.5f*r, -0.5f*r, -0.5f*r)*rM).x + offV.x, (MPoint( 0.5f*r, -0.5f*r, -0.5f*r)*rM).y + offV.y,(MPoint( 0.5f*r, -0.5f*r, -0.5f*r)*rM).z + offV.z);
-		data->m_locDrawTriangles.append( (MPoint( 0.5f*r,  0.5f*r, -0.5f*r)*rM).x + offV.x, (MPoint( 0.5f*r,  0.5f*r, -0.5f*r)*rM).y + offV.y,(MPoint( 0.5f*r,  0.5f*r, -0.5f*r)*rM).z + offV.z);
-		data->m_locDrawTriangles.append( (MPoint( 0.5f*r,  0.5f*r,  0.5f*r)*rM).x + offV.x, (MPoint( 0.5f*r,  0.5f*r,  0.5f*r)*rM).y + offV.y,(MPoint( 0.5f*r,  0.5f*r,  0.5f*r)*rM).z + offV.z);
-		data->m_locDrawTriangles.append( (MPoint( 0.5f*r, -0.5f*r,  0.5f*r)*rM).x + offV.x, (MPoint( 0.5f*r, -0.5f*r,  0.5f*r)*rM).y + offV.y,(MPoint( 0.5f*r, -0.5f*r,  0.5f*r)*rM).z + offV.z);
-
-		// Green side - LEFT
-		data->m_locDrawTriangles.append( (MPoint( -0.5f*r, -0.5f*r,  0.5f*r)*rM).x + offV.x, (MPoint( -0.5f*r, -0.5f*r,  0.5f*r)*rM).y + offV.y,(MPoint( -0.5f*r, -0.5f*r,  0.5f*r)*rM).z + offV.z);
-		data->m_locDrawTriangles.append( (MPoint( -0.5f*r,  0.5f*r,  0.5f*r)*rM).x + offV.x,  (MPoint( -0.5f*r,  0.5f*r,  0.5f*r)*rM).y + offV.y, (MPoint( -0.5f*r,  0.5f*r,  0.5f*r)*rM).z + offV.z);
-		data->m_locDrawTriangles.append( (MPoint( -0.5f*r,  0.5f*r, -0.5f*r)*rM).x + offV.x, (MPoint( -0.5f*r,  0.5f*r, -0.5f*r)*rM).y + offV.y,(MPoint( -0.5f*r,  0.5f*r, -0.5f*r)*rM).z + offV.z);
-		data->m_locDrawTriangles.append( (MPoint( -0.5f*r, -0.5f*r, -0.5f*r)*rM).x + offV.x, (MPoint( -0.5f*r, -0.5f*r, -0.5f*r)*rM).y + offV.y, (MPoint( -0.5f*r, -0.5f*r, -0.5f*r)*rM).z + offV.z);
-
-		// Blue side - TOP
-		data->m_locDrawTriangles.append( (MPoint(  0.5f*r,  0.5f*r,  0.5f*r)*rM).x + offV.x,  (MPoint(  0.5f*r,  0.5f*r,  0.5f*r)*rM).y + offV.y,  (MPoint(  0.5f*r,  0.5f*r,  0.5f*r)*rM).z + offV.z);
-		data->m_locDrawTriangles.append( (MPoint( 0.5f*r,  0.5f*r, -0.5f*r)*rM).x + offV.x, (MPoint( 0.5f*r,  0.5f*r, -0.5f*r)*rM).y + offV.y,(MPoint( 0.5f*r,  0.5f*r, -0.5f*r)*rM).z + offV.z);
-		data->m_locDrawTriangles.append( (MPoint( -0.5f*r,  0.5f*r, -0.5f*r)*rM).x + offV.x, (MPoint( -0.5f*r,  0.5f*r, -0.5f*r)*rM).y + offV.y,(MPoint( -0.5f*r,  0.5f*r, -0.5f*r)*rM).z + offV.z);
-		data->m_locDrawTriangles.append( (MPoint( -0.5f*r,  0.5f*r,  0.5f*r)*rM).x + offV.x, (MPoint( -0.5f*r,  0.5f*r,  0.5f*r)*rM).y + offV.y,(MPoint( -0.5f*r,  0.5f*r,  0.5f*r)*rM).z + offV.z);
-
-		// Red side - BOTTOM
-		data->m_locDrawTriangles.append( (MPoint( 0.5f*r, -0.5f*r, -0.5f*r)*rM).x + offV.x, (MPoint( 0.5f*r, -0.5f*r, -0.5f*r)*rM).y + offV.y, (MPoint( 0.5f*r, -0.5f*r, -0.5f*r)*rM).z + offV.z);
-		data->m_locDrawTriangles.append( (MPoint( 0.5f*r, -0.5f*r,  0.5f*r)*rM).x + offV.x, (MPoint( 0.5f*r, -0.5f*r,  0.5f*r)*rM).y + offV.y, (MPoint( 0.5f*r, -0.5f*r,  0.5f*r)*rM).z + offV.z );
-		data->m_locDrawTriangles.append( (MPoint( -0.5f*r, -0.5f*r,  0.5f*r)*rM).x + offV.x, (MPoint( -0.5f*r, -0.5f*r,  0.5f*r)*rM).y + offV.y,(MPoint( -0.5f*r, -0.5f*r,  0.5f*r)*rM).z + offV.z);
-		data->m_locDrawTriangles.append( (MPoint( -0.5f*r, -0.5f*r, -0.5f*r)*rM).x + offV.x, (MPoint( -0.5f*r, -0.5f*r, -0.5f*r)*rM).y + offV.y,(MPoint( -0.5f*r, -0.5f*r, -0.5f*r)*rM).z + offV.z);
-
-
-
-		//for (int i = 0; i < m_locTrianglesNum; i++)
-		//{
-		//	data->m_locDrawTriangles.append(MPoint(m_locBoxTriangles[i][0]*r , m_locBoxTriangles[i][1]*r , m_locBoxTriangles[i][2]*r )*rM + offV);
-		//}
+		for (int i = 0; i < m_locTrianglesNum; i++)
+		{
+			data->m_locDrawTriangles.append(MPoint(m_locBoxTriangles[i][0]*r , m_locBoxTriangles[i][1]*r , m_locBoxTriangles[i][2]*r )*rM + offV);
+		}
 
 
 
@@ -2409,643 +2340,115 @@ MUserData* BaseLocOverride::prepareForDraw(
 	return data;
 }
 
-//
-//void BaseLocOverride::addUIDrawables( const MDagPath& objPath, MHWRender::MUIDrawManager& drawManager, const MHWRender::MFrameContext& frameContext, const MUserData* data)
-//{
-//	BaseLocData* pLocatorData = (BaseLocData*)data;
-//	if (!pLocatorData)
-//	{
-//		return;
-//	}
-//
-//	int apiVer = MGlobal::apiVersion();
-//
-//
-//#if MAYA_API_VERSION > 201600
-//	if (pLocatorData->m_drawOnTop )
-//	{
-//		drawManager.beginDrawInXray();
-//	}
-//	if (!pLocatorData->m_drawOnTop)
-//	{
-//		drawManager.beginDrawable();
-//	}
-//
-//#else
-//	drawManager.beginDrawable();
-//
-//#endif
-//
-//
-//	if (pLocatorData->m_dispLoc)
-//	{
-//
-//
-//
-//		//drawManager.mesh(MHWRender::MUIDrawManager::kClosedLine, pLocatorData->m_locDrawPoints);
-//
-//		// Icon Names
-//
-//		// CIRCLE_24 // 
-//		// DIAMOND_24 // 
-//		// SQUARE_24 // 
-//		// UP_TRIANGLE_24 // 
-//		// DOWN_TRIANGLE_24 // 
-//		// HEXAGON_24 // 
-//		// CIRCLE_16 // 
-//		// DIAMOND_16 // 
-//		// SQUARE_16 // 
-//		// UP_TRIANGLE_16 // 
-//		// DOWN_TRIANGLE_16 // 
-//		// RIGHT_TRIANGLE_16 // 
-//		// HEXAGON_16 // 
-//		// RESIZE // 
-//		// OPTIONS // 
-//		// POINT_LIGHT // 
-//		// AMBIENT_LIGHT // 
-//		// OMNI_EMITTER // 
-//		// VOLUME_LIGHT // 
-//		// AIR_FIELD // 
-//		// DRAG_FIELD // 
-//		// GRAVITY_FIELD // 
-//		// NEWTON_FIELD // 
-//		// RADIAL_FIELD // 
-//		// TURBULENCE_FIELD // 
-//		// UNIFORM_FIELD // 
-//		// VORTEX_FIELD // 
-//		// UNLOCK_MONO // 
-//		// LOCK_MONO // 
-//		// NUCLEUS // 
-//		// DOT // 
-//		// CROSS // 
-//		// DRAG_POINT // 
-//		// OFF_RADIO_BTN // 
-//		// FFD_POINT // 
-//		// CURVE_ENDS // 
-//		// DRAG_PT // 
-//		// ON_RADIO_BTN // 
-//		// PIVOT // 
-//		// HOLLOW_BOX // 
-//		// ROTATE_PIVOT // 
-//		// SELECT_HANDLE_ROOT // 
-//		// SOLID_BOX // 
-//		// HOLLOW_TRIANGLE // 
-//		// SCALE_PIVOT // 
-//		// SELECT_HANDLE // 
-//		// U_CV // 
-//		// V_CV // 
-//		// X_AXIS // 
-//		// Y_AXIS // 
-//		// Z_AXIS // 
-//		// IK // 
-//		// FK //
-//
-//		drawManager.setDepthPriority(5);
-//
-//
-//		// Offset
-//
-//		MVector offV(pLocatorData->m_offsetX + pLocatorData->m_localPosX, pLocatorData->m_offsetY + pLocatorData->m_localPosY, pLocatorData->m_offsetZ + pLocatorData->m_localPosZ);
-//
-//
-//		MPoint center;
-//		MVector normal;
-//		MVector vU(0.0,1.0,0.0);
-//		MVector vR(1.0,0.0,0.0);
-//		MVector vN(0.0,0.0,1.0);
-//
-//		double r = pLocatorData->m_radius;
-//		r *= 0.5;
-//
-//		MColor baseCol = pLocatorData->m_locColor;
-//
-//		bool drawFill = true;
-//
-//		if (pLocatorData->m_polygonAlpha == 0.0)
-//		{
-//			drawFill = false;
-//		}
-//
-//		float bCD_r = baseCol.r - pLocatorData->m_polygonColor.r;
-//		float bCD_g = baseCol.g - pLocatorData->m_polygonColor.g;
-//		float bCD_b = baseCol.b - pLocatorData->m_polygonColor.b;
-//
-//		MColor diffCol(bCD_r,bCD_g,bCD_b, 0.0);
-//
-//		MColor fillCol, lineCol;
-//
-//		fillCol = MColor( pLocatorData->m_polygonColor.r, pLocatorData->m_polygonColor.g, pLocatorData->m_polygonColor.b, pLocatorData->m_polygonAlpha );
-//		lineCol = MColor( pLocatorData->m_lineColor.r, pLocatorData->m_lineColor.g, pLocatorData->m_lineColor.b, pLocatorData->m_lineAlpha );
-//
-//		if ( MHWRender::MGeometryUtilities::displayStatus(objPath) == M3dView::kDormant ) {
-//			fillCol = MColor( pLocatorData->m_polygonColor.r, pLocatorData->m_polygonColor.g, pLocatorData->m_polygonColor.b, pLocatorData->m_polygonAlpha );
-//			lineCol = MColor( pLocatorData->m_lineColor.r, pLocatorData->m_lineColor.g, pLocatorData->m_lineColor.b, pLocatorData->m_lineAlpha );
-//		}
-//
-//		if ( frameContext.getDisplayStyle() & MHWRender::MDrawContext::kWireFrame ) {
-//
-//
-//			fillCol = MColor( pLocatorData->m_locColor.r, pLocatorData->m_locColor.g, pLocatorData->m_locColor.b, 0.0 );
-//			lineCol = MColor( pLocatorData->m_locColor.r, pLocatorData->m_locColor.g, pLocatorData->m_locColor.b,  pLocatorData->m_lineAlpha );
-//		}
-//
-//		if ( MHWRender::MGeometryUtilities::displayStatus(objPath) == M3dView::kLead ) {
-//
-//
-//			fillCol = MColor( pLocatorData->m_locColor.r, pLocatorData->m_locColor.g, pLocatorData->m_locColor.b, pLocatorData->m_polygonAlpha );
-//			lineCol = MColor( pLocatorData->m_locColor.r + 0.25f, pLocatorData->m_locColor.g + 0.25f, pLocatorData->m_locColor.b + 0.25f,  pLocatorData->m_lineAlpha );
-//		}
-//
-//		if ( MHWRender::MGeometryUtilities::displayStatus(objPath) == M3dView::kActive ) {
-//
-//			fillCol = MColor( pLocatorData->m_locColor.r, pLocatorData->m_locColor.g, pLocatorData->m_locColor.b, pLocatorData->m_polygonAlpha );
-//			lineCol = MColor( pLocatorData->m_locColor.r, pLocatorData->m_locColor.g, pLocatorData->m_locColor.b,  pLocatorData->m_lineAlpha );
-//		}
-//
-//		if ( MHWRender::MGeometryUtilities::displayStatus(objPath) == M3dView::kTemplate ) {
-//
-//			fillCol = MColor( pLocatorData->m_locColor.r, pLocatorData->m_locColor.g, pLocatorData->m_locColor.b, pLocatorData->m_polygonAlpha );
-//			lineCol = MColor( pLocatorData->m_locColor.r, pLocatorData->m_locColor.g, pLocatorData->m_locColor.b,  pLocatorData->m_lineAlpha );
-//		}
-//
-//
-//		if (pLocatorData->m_lineStyle == 0)
-//		{
-//			drawManager.setLineStyle(drawManager.kSolid);
-//		}
-//		if (pLocatorData->m_lineStyle == 1)
-//		{
-//			drawManager.setLineStyle(drawManager.kShortDotted);
-//		}
-//		if (pLocatorData->m_lineStyle == 2)
-//		{
-//			drawManager.setLineStyle(drawManager.kShortDashed);
-//		}
-//		if (pLocatorData->m_lineStyle == 3)
-//		{
-//			drawManager.setLineStyle(drawManager.kDashed);
-//		}
-//		if (pLocatorData->m_lineStyle == 4)
-//		{
-//			drawManager.setLineStyle(drawManager.kDotted);
-//		}
-//
-//		if (pLocatorData->m_paintStyle == 0)
-//		{
-//			drawManager.setPaintStyle(drawManager.kFlat);
-//		}
-//		if (pLocatorData->m_paintStyle == 1)
-//		{
-//			drawManager.setPaintStyle(drawManager.kStippled);
-//		}
-//
-//
-//		// Draw Circle
-//		if (pLocatorData->m_drawPresets == 0)
-//		{
-//
-//
-//			if (pLocatorData->m_dispCard)
-//			{
-//				vU = MVector(0.0,0.0,1.0);
-//				vU *= frameContext.getMatrix(MHWRender::MFrameContext::kViewInverseMtx);
-//			}
-//
-//
-//			if (drawFill)
-//			{
-//				// Draw fill
-//				drawManager.setColor( fillCol );
-//				drawManager.mesh(MHWRender::MUIDrawManager::kTriStrip, pLocatorData->m_locDrawTriangles);
-//			}
-//
-//
-//			// Draw outline
-//			drawManager.setColor( lineCol );
-//			drawManager.setLineWidth(pLocatorData->m_lineWidth);
-//			drawManager.mesh(MHWRender::MUIDrawManager::kLineStrip, pLocatorData->m_locDrawPoints);
-//
-//
-//		}
-//
-//		// Draw Box
-//		if (pLocatorData->m_drawPresets == 1)
-//		{
-//			if (drawFill)
-//			{
-//				// Draw fill
-//				drawManager.setColor( fillCol );
-//				drawManager.mesh(MHWRender::MUIDrawManager::kTriangles, pLocatorData->m_locDrawTriangles);
-//			}
-//
-//			// Draw outline
-//			drawManager.setColor( lineCol );
-//			drawManager.setLineWidth(pLocatorData->m_lineWidth);
-//
-//
-//			for (int i = 0; i < pLocatorData->m_locDrawPointsA.size(); i++)
-//			{
-//				drawManager.mesh(MHWRender::MUIDrawManager::kLineStrip,  pLocatorData->m_locDrawPointsA[i]);
-//			}
-//
-//
-//
-//		}
-//
-//
-//		// Draw Sphere
-//		if (pLocatorData->m_drawPresets == 2)
-//		{
-//
-//			// Draw fill
-//			drawManager.setColor( fillCol );
-//			drawManager.mesh(MHWRender::MUIDrawManager::kTriStrip, pLocatorData->m_locDrawTriangles);
-//
-//		}
-//
-//		// Draw Cone
-//		if (pLocatorData->m_drawPresets == 3)
-//		{
-//			// Draw fill
-//			drawManager.setColor( fillCol );
-//			drawManager.mesh(MHWRender::MUIDrawManager::kTriStrip, pLocatorData->m_locDrawTriangles);
-//
-//		}
-//
-//		// Draw Rectangle
-//		if (pLocatorData->m_drawPresets == 4)
-//		{
-//			if (drawFill)
-//			{
-//				// Draw fill
-//				drawManager.setColor( fillCol );
-//				drawManager.mesh(MHWRender::MUIDrawManager::kTriStrip, pLocatorData->m_locDrawTriangles);
-//			}
-//			// Draw outline
-//			drawManager.setColor( lineCol );
-//			drawManager.setLineWidth(pLocatorData->m_lineWidth);
-//			drawManager.mesh(MHWRender::MUIDrawManager::kLineStrip, pLocatorData->m_locDrawPoints);
-//
-//		}
-//
-//		// Draw Drag Handle
-//		if (pLocatorData->m_drawPresets == 5)
-//		{
-//
-//			vU = MVector(0.0,0.0,1.0);
-//			vU *= pLocatorData->m_rotMatrix;
-//
-//			center += MVector(pLocatorData->m_offsetX,pLocatorData->m_offsetY,pLocatorData->m_offsetZ);
-//			center *= pLocatorData->m_rotMatrix;
-//			center -= MVector(pLocatorData->m_offsetX,pLocatorData->m_offsetY,pLocatorData->m_offsetZ);
-//			center += offV;
-//
-//			if (drawFill)
-//			{
-//				// Draw fill
-//				drawManager.setColor( fillCol );
-//				drawManager.circle(center, vU, r, true);
-//			}
-//
-//			// Draw outline
-//			drawManager.setColor( lineCol );
-//			drawManager.setLineWidth(pLocatorData->m_lineWidth);
-//			drawManager.circle(center, vU, r, false);
-//
-//			center = MVector(0.0,0.0,0.0);
-//
-//			center += MVector(pLocatorData->m_offsetX,pLocatorData->m_offsetY - r,pLocatorData->m_offsetZ);
-//			center *= pLocatorData->m_rotMatrix;
-//			center -= MVector(pLocatorData->m_offsetX,pLocatorData->m_offsetY,pLocatorData->m_offsetZ);
-//			center += offV;
-//
-//
-//			MVector lineVec(center.x, center.y, center.z);
-//
-//			drawManager.line(MPoint(pLocatorData->m_localPosX,pLocatorData->m_localPosY,pLocatorData->m_localPosZ) , MPoint(lineVec) );
-//
-//		}
-//
-//
-//		// Icon
-//
-//		if (pLocatorData->m_drawPresets == 6)
-//		{
-//			if (drawFill)
-//			{
-//				// Draw fill
-//				drawManager.setColor( fillCol );
-//				drawManager.mesh(MHWRender::MUIDrawManager::kTriangles, pLocatorData->m_locDrawTriangles);
-//			}
-//
-//			if (pLocatorData->m_lineWidth != 0.0)
-//			{
-//				// Draw outline
-//				drawManager.setColor( lineCol );
-//				drawManager.setLineWidth(pLocatorData->m_lineWidth);
-//
-//				for (int i = 0; i < pLocatorData->m_locDrawPointsA.size(); i++)
-//				{
-//
-//					drawManager.mesh(MHWRender::MUIDrawManager::kLineStrip, pLocatorData->m_locDrawPointsA[i]);
-//				}
-//
-//			}
-//
-//
-//
-//
-//
-//		}
-//
-//		// Draw Gyroscope
-//		if (pLocatorData->m_drawPresets == 7)
-//		{
-//			// Draw outline
-//			drawManager.setColor( lineCol );
-//			drawManager.setLineWidth(pLocatorData->m_lineWidth);
-//
-//			drawManager.setPointSize(5);
-//
-//			for (int i = 0; i < pLocatorData->m_locDrawPointsA.size(); i++)
-//			{
-//
-//				if (i==0)
-//				{
-//					drawManager.setColor( lineCol + MColor(0.0,1.0,0.0)  );
-//					drawManager.point(pLocatorData->m_locDrawPointsA[i][0]);
-//				}
-//
-//				if (i==1)
-//				{
-//					drawManager.setColor( lineCol + MColor(0.0,0.0,1.0)  );
-//					drawManager.point(pLocatorData->m_locDrawPointsA[i][0]);
-//				}
-//
-//				if (i==2)
-//				{
-//					drawManager.setColor( lineCol + MColor(1.0,0.0,0.0)  );
-//				}
-//
-//				drawManager.mesh(MHWRender::MUIDrawManager::kLineStrip, pLocatorData->m_locDrawPointsA[i]);
-//			}
-//
-//
-//		}
-//
-//		// Draw Camera
-//		if (pLocatorData->m_drawPresets == 8)
-//		{
-//			if (drawFill)
-//			{
-//				// Draw fill
-//				drawManager.setColor( fillCol );
-//				drawManager.mesh(MHWRender::MUIDrawManager::kTriangles, pLocatorData->m_locDrawTriangles);
-//			}
-//
-//			// Draw outline
-//			drawManager.setColor( lineCol );
-//			drawManager.setLineWidth(pLocatorData->m_lineWidth);
-//
-//
-//			for (int i = 0; i < pLocatorData->m_locDrawPointsA.size(); i++)
-//			{
-//
-//				//drawManager.mesh(MHWRender::MUIDrawManager::kClosedLine, pLocatorData->m_locDrawPoints);
-//				drawManager.mesh(MHWRender::MUIDrawManager::kLineStrip,  pLocatorData->m_locDrawPointsA[i]);
-//			}
-//
-//
-//		}
-//
-//
-//		// Draw File
-//		if (pLocatorData->m_drawPresets == 11)
-//		{
-//			if (drawFill)
-//			{
-//				// Draw fill
-//				drawManager.setColor( fillCol );
-//				drawManager.mesh(MHWRender::MUIDrawManager::kTriangles, pLocatorData->m_locDrawTriangles);
-//			}
-//
-//
-//
-//			// Draw outline
-//			drawManager.setColor( lineCol );
-//			drawManager.setLineWidth(pLocatorData->m_lineWidth);
-//
-//
-//			for (int i = 0; i < pLocatorData->m_locDrawPointsA.size(); i++)
-//			{
-//
-//				//drawManager.mesh(MHWRender::MUIDrawManager::kClosedLine, pLocatorData->m_locDrawPoints);
-//				drawManager.mesh(MHWRender::MUIDrawManager::kLineStrip,  pLocatorData->m_locDrawPointsA[i]);
-//			}
-//
-//			// MGlobal::displayInfo(MString() + pLocatorData->m_locDrawPointsA.size());
-//
-//			//if (pLocatorData->m_locDrawPointsA.size() < 2 || pLocatorData->m_locDrawTriangles.length() == 0)
-//			//{
-//
-//			//	drawManager.text(MPoint::origin, "No input point arrays", MHWRender::MUIDrawManager::TextAlignment::kCenter);
-//			//}
-//
-//		}
-//
-//		// Draw 2D Icons
-//		if (pLocatorData->m_drawPresets == 9)
-//		{
-//
-//			center *= pLocatorData->m_rotMatrix;
-//			vU *= pLocatorData->m_rotMatrix;
-//			center += offV;
-//
-//			// Draw fill
-//			drawManager.setColor( lineCol );
-//
-//
-//#if MAYA_API_VERSION > 201600
-//
-//
-//			if ( pLocatorData->m_draw_twod_IconType == 0) { drawManager.icon(center,"CIRCLE_24",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 1) { drawManager.icon(center,"DIAMOND_24",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 2) { drawManager.icon(center,"SQUARE_24",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 3) { drawManager.icon(center,"UP_TRIANGLE_24",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 4) { drawManager.icon(center,"DOWN_TRIANGLE_24",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 5) { drawManager.icon(center,"HEXAGON_24",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 6) { drawManager.icon(center,"CIRCLE_16",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 7) { drawManager.icon(center,"DIAMOND_16",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 8) { drawManager.icon(center,"SQUARE_16",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 9) { drawManager.icon(center,"UP_TRIANGLE_16",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 10) { drawManager.icon(center,"DOWN_TRIANGLE_16",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 11) { drawManager.icon(center,"RIGHT_TRIANGLE_16",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 12) { drawManager.icon(center,"HEXAGON_16",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 13) { drawManager.icon(center,"RESIZE",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 14) { drawManager.icon(center,"OPTIONS",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 15) { drawManager.icon(center,"POINT_LIGHT",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 16) { drawManager.icon(center,"AMBIENT_LIGHT",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 17) { drawManager.icon(center,"OMNI_EMITTER",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 18) { drawManager.icon(center,"VOLUME_LIGHT",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 19) { drawManager.icon(center,"AIR_FIELD",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 20) { drawManager.icon(center,"DRAG_FIELD",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 21) { drawManager.icon(center,"GRAVITY_FIELD",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 22) { drawManager.icon(center,"NEWTON_FIELD",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 23) { drawManager.icon(center,"RADIAL_FIELD",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 24) { drawManager.icon(center,"TURBULENCE_FIELD",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 25) { drawManager.icon(center,"UNIFORM_FIELD",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 26) { drawManager.icon(center,"VORTEX_FIELD",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 27) { drawManager.icon(center,"UNLOCK_MONO",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 28) { drawManager.icon(center,"LOCK_MONO",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 29) { drawManager.icon(center,"NUCLEUS",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 30) { drawManager.icon(center,"DOT",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 31) { drawManager.icon(center,"CROSS",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 32) { drawManager.icon(center,"DRAG_POINT",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 33) { drawManager.icon(center,"OFF_RADIO_BTN",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 34) { drawManager.icon(center,"FFD_POINT",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 35) { drawManager.icon(center,"CURVE_ENDS",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 36) { drawManager.icon(center,"DRAG_PT",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 37) { drawManager.icon(center,"PIVOT",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 38) { drawManager.icon(center,"HOLLOW_BOX",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 39) { drawManager.icon(center,"ROTATE_PIVOT",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 40) { drawManager.icon(center,"SELECT_HANDLE_ROOT",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 41) { drawManager.icon(center,"SOLID_BOX",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 42) { drawManager.icon(center,"HOLLOW_TRIANGLE",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 43) { drawManager.icon(center,"SCALE_PIVOT",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 44) { drawManager.icon(center,"SELECT_HANDLE",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 45) { drawManager.icon(center,"U_CV",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 46) { drawManager.icon(center,"V_CV",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 47) { drawManager.icon(center,"X_AXIS",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 48) { drawManager.icon(center,"Y_AXIS",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 49) { drawManager.icon(center,"Z_AXIS",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 50) { drawManager.icon(center,"IK",1.0); }
-//			if ( pLocatorData->m_draw_twod_IconType == 51) { drawManager.icon(center,"FK",1.0); }
-//
-//			// drawManager.icon(center,"SCALE_PIVOT",1.0);
-//
-//#else
-//
-//			drawManager.setPointSize(5.0);
-//			drawManager.point(center);
-//
-//#endif
-//
-//
-//
-//
-//
-//
-//		}
-//
-//		// Draw A-B line
-//		if (pLocatorData->m_drawPresets == 10)
-//		{
-//
-//			// Draw fill
-//			drawManager.setColor( lineCol );
-//
-//			drawManager.setLineWidth(pLocatorData->m_lineWidth);
-//			drawManager.line(pLocatorData->m_inLocA_pos, pLocatorData->m_inLocB_pos);
-//
-//		}
-//
-//		// Draw text
-//		if (pLocatorData->m_dispText)
-//		{
-//			drawManager.setColor( lineCol );
-//			drawManager.setFontSize(pLocatorData->m_textFontSize);
-//			drawManager.setFontIncline(pLocatorData->m_textIncline);
-//			drawManager.setFontWeight(pLocatorData->m_textWeight);
-//			drawManager.setFontStretch(pLocatorData->m_textStretch);
-//			drawManager.setFontLine(pLocatorData->m_textLine);
-//
-//			MString faceName = BaseLocData::m_fFontList[pLocatorData->m_fontFaceIndex];
-//			drawManager.setFontName(faceName);
-//
-//			int boxSize[] = { pLocatorData->m_textBoxWidth, pLocatorData->m_textBoxHeight };
-//			drawManager.text(pLocatorData->m_textPosition, pLocatorData->m_text, pLocatorData->m_textAlignment, boxSize[0]+boxSize[1] == 0 ? NULL : boxSize, &pLocatorData->m_textBoxColor, false);
-//
-//		}
-//
-//
-//		if (pLocatorData->m_dispNum)
-//		{
-//			drawManager.setColor( lineCol );
-//			drawManager.text(MPoint(0.0,0.0,0.0), MString()+pLocatorData->m_locID ,MHWRender::MUIDrawManager::kCenter);
-//		}
-//
-//
-//		// Draw icon for selection center
-//		if (pLocatorData->m_dispLocPivot)
-//		{
-//			drawManager.setColor( lineCol );
-//			//drawManager.icon(MPoint(0.0,0.0,0.0),"SCALE_PIVOT",1.0);
-//#if MAYA_API_VERSION > 201600
-//
-//			drawManager.icon(center,"SCALE_PIVOT",1.0);
-//
-//#else
-//
-//			drawManager.setPointSize(5.0);
-//			drawManager.point(center);
-//
-//#endif
-//		}
-//
-//
-//
-//	}
-//
-//#if MAYA_API_VERSION > 201600
-//	if (pLocatorData->m_drawOnTop)
-//	{
-//		drawManager.endDrawInXray();
-//	}
-//	if (!pLocatorData->m_drawOnTop)
-//	{
-//		drawManager.endDrawable();
-//	}
-//#else
-//
-//	drawManager.endDrawable();
-//
-//#endif
-//
-//}
 
-void BaseLocOverride::draw(const MHWRender::MDrawContext& context,
-						   const MUserData* data)
+void BaseLocOverride::addUIDrawables( const MDagPath& objPath, MHWRender::MUIDrawManager& drawManager, const MHWRender::MFrameContext& frameContext, const MUserData* data)
 {
-
 	BaseLocData* pLocatorData = (BaseLocData*)data;
 	if (!pLocatorData)
 	{
 		return;
 	}
 
+	int apiVer = MGlobal::apiVersion();
+
+
+#if MAYA_API_VERSION > 201600
+	if (pLocatorData->m_drawOnTop )
+	{
+		drawManager.beginDrawInXray();
+	}
+	if (!pLocatorData->m_drawOnTop)
+	{
+		drawManager.beginDrawable();
+	}
+
+#else
+	drawManager.beginDrawable();
+
+#endif
+
+
 	if (pLocatorData->m_dispLoc)
 	{
 
-		MStatus status;
-
-		MMatrix transform = context.getMatrix(MHWRender::MFrameContext::kWorldViewMtx, &status);
-		MMatrix projection = context.getMatrix(MHWRender::MFrameContext::kProjectionMtx, &status);
-
-		// set transformation matrix
-		glMatrixMode(GL_MODELVIEW);
-		glPushMatrix();
-		glLoadMatrixd(transform.matrix[0]);
-		// set projection matrix
-		glMatrixMode(GL_PROJECTION);
-		glPushMatrix();
-		glLoadMatrixd(projection.matrix[0]);
-
-		glPushAttrib(GL_CURRENT_BIT);
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		glDepthMask(GL_FALSE);
 
 
+		//drawManager.mesh(MHWRender::MUIDrawManager::kClosedLine, pLocatorData->m_locDrawPoints);
+
+		// Icon Names
+
+		// CIRCLE_24 // 
+		// DIAMOND_24 // 
+		// SQUARE_24 // 
+		// UP_TRIANGLE_24 // 
+		// DOWN_TRIANGLE_24 // 
+		// HEXAGON_24 // 
+		// CIRCLE_16 // 
+		// DIAMOND_16 // 
+		// SQUARE_16 // 
+		// UP_TRIANGLE_16 // 
+		// DOWN_TRIANGLE_16 // 
+		// RIGHT_TRIANGLE_16 // 
+		// HEXAGON_16 // 
+		// RESIZE // 
+		// OPTIONS // 
+		// POINT_LIGHT // 
+		// AMBIENT_LIGHT // 
+		// OMNI_EMITTER // 
+		// VOLUME_LIGHT // 
+		// AIR_FIELD // 
+		// DRAG_FIELD // 
+		// GRAVITY_FIELD // 
+		// NEWTON_FIELD // 
+		// RADIAL_FIELD // 
+		// TURBULENCE_FIELD // 
+		// UNIFORM_FIELD // 
+		// VORTEX_FIELD // 
+		// UNLOCK_MONO // 
+		// LOCK_MONO // 
+		// NUCLEUS // 
+		// DOT // 
+		// CROSS // 
+		// DRAG_POINT // 
+		// OFF_RADIO_BTN // 
+		// FFD_POINT // 
+		// CURVE_ENDS // 
+		// DRAG_PT // 
+		// ON_RADIO_BTN // 
+		// PIVOT // 
+		// HOLLOW_BOX // 
+		// ROTATE_PIVOT // 
+		// SELECT_HANDLE_ROOT // 
+		// SOLID_BOX // 
+		// HOLLOW_TRIANGLE // 
+		// SCALE_PIVOT // 
+		// SELECT_HANDLE // 
+		// U_CV // 
+		// V_CV // 
+		// X_AXIS // 
+		// Y_AXIS // 
+		// Z_AXIS // 
+		// IK // 
+		// FK //
+
+		drawManager.setDepthPriority(5);
+
+
+		// Offset
+
+		MVector offV(pLocatorData->m_offsetX + pLocatorData->m_localPosX, pLocatorData->m_offsetY + pLocatorData->m_localPosY, pLocatorData->m_offsetZ + pLocatorData->m_localPosZ);
+
+
+		MPoint center;
+		MVector normal;
+		MVector vU(0.0,1.0,0.0);
+		MVector vR(1.0,0.0,0.0);
+		MVector vN(0.0,0.0,1.0);
+
+		double r = pLocatorData->m_radius;
+		r *= 0.5;
+
+		MColor baseCol = pLocatorData->m_locColor;
 
 		bool drawFill = true;
 
@@ -3054,71 +2457,495 @@ void BaseLocOverride::draw(const MHWRender::MDrawContext& context,
 			drawFill = false;
 		}
 
-		// Offset
-		MVector offV(pLocatorData->m_offsetX,pLocatorData->m_offsetY,pLocatorData->m_offsetZ);
+		float bCD_r = baseCol.r - pLocatorData->m_polygonColor.r;
+		float bCD_g = baseCol.g - pLocatorData->m_polygonColor.g;
+		float bCD_b = baseCol.b - pLocatorData->m_polygonColor.b;
 
+		MColor diffCol(bCD_r,bCD_g,bCD_b, 0.0);
 
-		// Color
 		MColor fillCol, lineCol;
 
 		fillCol = MColor( pLocatorData->m_polygonColor.r, pLocatorData->m_polygonColor.g, pLocatorData->m_polygonColor.b, pLocatorData->m_polygonAlpha );
 		lineCol = MColor( pLocatorData->m_lineColor.r, pLocatorData->m_lineColor.g, pLocatorData->m_lineColor.b, pLocatorData->m_lineAlpha );
 
+		if ( MHWRender::MGeometryUtilities::displayStatus(objPath) == M3dView::kDormant ) {
+			fillCol = MColor( pLocatorData->m_polygonColor.r, pLocatorData->m_polygonColor.g, pLocatorData->m_polygonColor.b, pLocatorData->m_polygonAlpha );
+			lineCol = MColor( pLocatorData->m_lineColor.r, pLocatorData->m_lineColor.g, pLocatorData->m_lineColor.b, pLocatorData->m_lineAlpha );
+		}
+
+		if ( frameContext.getDisplayStyle() & MHWRender::MDrawContext::kWireFrame ) {
 
 
-		// Cone
+			fillCol = MColor( pLocatorData->m_locColor.r, pLocatorData->m_locColor.g, pLocatorData->m_locColor.b, 0.0 );
+			lineCol = MColor( pLocatorData->m_locColor.r, pLocatorData->m_locColor.g, pLocatorData->m_locColor.b,  pLocatorData->m_lineAlpha );
+		}
+
+		if ( MHWRender::MGeometryUtilities::displayStatus(objPath) == M3dView::kLead ) {
+
+
+			fillCol = MColor( pLocatorData->m_locColor.r, pLocatorData->m_locColor.g, pLocatorData->m_locColor.b, pLocatorData->m_polygonAlpha );
+			lineCol = MColor( pLocatorData->m_locColor.r + 0.25f, pLocatorData->m_locColor.g + 0.25f, pLocatorData->m_locColor.b + 0.25f,  pLocatorData->m_lineAlpha );
+		}
+
+		if ( MHWRender::MGeometryUtilities::displayStatus(objPath) == M3dView::kActive ) {
+
+			fillCol = MColor( pLocatorData->m_locColor.r, pLocatorData->m_locColor.g, pLocatorData->m_locColor.b, pLocatorData->m_polygonAlpha );
+			lineCol = MColor( pLocatorData->m_locColor.r, pLocatorData->m_locColor.g, pLocatorData->m_locColor.b,  pLocatorData->m_lineAlpha );
+		}
+
+		if ( MHWRender::MGeometryUtilities::displayStatus(objPath) == M3dView::kTemplate ) {
+
+			fillCol = MColor( pLocatorData->m_locColor.r, pLocatorData->m_locColor.g, pLocatorData->m_locColor.b, pLocatorData->m_polygonAlpha );
+			lineCol = MColor( pLocatorData->m_locColor.r, pLocatorData->m_locColor.g, pLocatorData->m_locColor.b,  pLocatorData->m_lineAlpha );
+		}
+
+
+		if (pLocatorData->m_lineStyle == 0)
+		{
+			drawManager.setLineStyle(drawManager.kSolid);
+		}
+		if (pLocatorData->m_lineStyle == 1)
+		{
+			drawManager.setLineStyle(drawManager.kShortDotted);
+		}
+		if (pLocatorData->m_lineStyle == 2)
+		{
+			drawManager.setLineStyle(drawManager.kShortDashed);
+		}
+		if (pLocatorData->m_lineStyle == 3)
+		{
+			drawManager.setLineStyle(drawManager.kDashed);
+		}
+		if (pLocatorData->m_lineStyle == 4)
+		{
+			drawManager.setLineStyle(drawManager.kDotted);
+		}
+
+		if (pLocatorData->m_paintStyle == 0)
+		{
+			drawManager.setPaintStyle(drawManager.kFlat);
+		}
+		if (pLocatorData->m_paintStyle == 1)
+		{
+			drawManager.setPaintStyle(drawManager.kStippled);
+		}
+
+
+		// Draw Circle
 		if (pLocatorData->m_drawPresets == 0)
 		{
 
-			// Draw outline
-			glBegin(GL_LINE_LOOP);
 
-			glColor4f(lineCol.r, lineCol.g, lineCol.b, lineCol.a);
-			for (int i = 0; i < pLocatorData->m_locDrawPoints.length(); i++)
+			if (pLocatorData->m_dispCard)
 			{
-				glVertex3f(pLocatorData->m_locDrawPoints[i].x, pLocatorData->m_locDrawPoints[i].y, pLocatorData->m_locDrawPoints[i].z);
+				vU = MVector(0.0,0.0,1.0);
+				vU *= frameContext.getMatrix(MHWRender::MFrameContext::kViewInverseMtx);
 			}
-			glEnd();
 
 
-			// Draw fill
 			if (drawFill)
 			{
-
-				glBegin(GL_TRIANGLE_FAN);
-				glColor4f(fillCol.r, fillCol.g, fillCol.b, fillCol.a);
-				for (int i = 0; i < pLocatorData->m_locDrawTriangles.length(); i++)
-				{
-					glVertex3f(pLocatorData->m_locDrawTriangles[i].x, pLocatorData->m_locDrawTriangles[i].y, pLocatorData->m_locDrawTriangles[i].z);
-				}
-				glEnd();
+				// Draw fill
+				drawManager.setColor( fillCol );
+				drawManager.mesh(MHWRender::MUIDrawManager::kTriStrip, pLocatorData->m_locDrawTriangles);
 			}
+
+
+			// Draw outline
+			drawManager.setColor( lineCol );
+			drawManager.setLineWidth(pLocatorData->m_lineWidth);
+			drawManager.mesh(MHWRender::MUIDrawManager::kLineStrip, pLocatorData->m_locDrawPoints);
+
+
 		}
 
+		// Draw Box
 		if (pLocatorData->m_drawPresets == 1)
+		{
+			if (drawFill)
+			{
+				// Draw fill
+				drawManager.setColor( fillCol );
+				drawManager.mesh(MHWRender::MUIDrawManager::kTriangles, pLocatorData->m_locDrawTriangles);
+			}
+
+			// Draw outline
+			drawManager.setColor( lineCol );
+			drawManager.setLineWidth(pLocatorData->m_lineWidth);
+
+
+			for (int i = 0; i < pLocatorData->m_locDrawPointsA.size(); i++)
+			{
+				drawManager.mesh(MHWRender::MUIDrawManager::kLineStrip,  pLocatorData->m_locDrawPointsA[i]);
+			}
+
+
+
+		}
+
+
+		// Draw Sphere
+		if (pLocatorData->m_drawPresets == 2)
 		{
 
 			// Draw fill
+			drawManager.setColor( fillCol );
+			drawManager.mesh(MHWRender::MUIDrawManager::kTriStrip, pLocatorData->m_locDrawTriangles);
+
+		}
+
+		// Draw Cone
+		if (pLocatorData->m_drawPresets == 3)
+		{
+			// Draw fill
+			drawManager.setColor( fillCol );
+			drawManager.mesh(MHWRender::MUIDrawManager::kTriStrip, pLocatorData->m_locDrawTriangles);
+
+		}
+
+		// Draw Rectangle
+		if (pLocatorData->m_drawPresets == 4)
+		{
 			if (drawFill)
 			{
-
-				glBegin(GL_TRIANGLE_FAN);
-				glColor4f(fillCol.r, fillCol.g, fillCol.b, fillCol.a);
-				for (int i = 0; i < pLocatorData->m_locDrawTriangles.length(); i++)
-				{
-					glVertex3f(pLocatorData->m_locDrawTriangles[i].x, pLocatorData->m_locDrawTriangles[i].y, pLocatorData->m_locDrawTriangles[i].z);
-				}
-				glEnd();
+				// Draw fill
+				drawManager.setColor( fillCol );
+				drawManager.mesh(MHWRender::MUIDrawManager::kTriStrip, pLocatorData->m_locDrawTriangles);
 			}
+			// Draw outline
+			drawManager.setColor( lineCol );
+			drawManager.setLineWidth(pLocatorData->m_lineWidth);
+			drawManager.mesh(MHWRender::MUIDrawManager::kLineStrip, pLocatorData->m_locDrawPoints);
+
+		}
+
+		// Draw Drag Handle
+		if (pLocatorData->m_drawPresets == 5)
+		{
+
+			vU = MVector(0.0,0.0,1.0);
+			vU *= pLocatorData->m_rotMatrix;
+
+			center += MVector(pLocatorData->m_offsetX,pLocatorData->m_offsetY,pLocatorData->m_offsetZ);
+			center *= pLocatorData->m_rotMatrix;
+			center -= MVector(pLocatorData->m_offsetX,pLocatorData->m_offsetY,pLocatorData->m_offsetZ);
+			center += offV;
+
+			if (drawFill)
+			{
+				// Draw fill
+				drawManager.setColor( fillCol );
+				drawManager.circle(center, vU, r, true);
+			}
+
+			// Draw outline
+			drawManager.setColor( lineCol );
+			drawManager.setLineWidth(pLocatorData->m_lineWidth);
+			drawManager.circle(center, vU, r, false);
+
+			center = MVector(0.0,0.0,0.0);
+
+			center += MVector(pLocatorData->m_offsetX,pLocatorData->m_offsetY - r,pLocatorData->m_offsetZ);
+			center *= pLocatorData->m_rotMatrix;
+			center -= MVector(pLocatorData->m_offsetX,pLocatorData->m_offsetY,pLocatorData->m_offsetZ);
+			center += offV;
+
+
+			MVector lineVec(center.x, center.y, center.z);
+
+			drawManager.line(MPoint(pLocatorData->m_localPosX,pLocatorData->m_localPosY,pLocatorData->m_localPosZ) , MPoint(lineVec) );
+
 		}
 
 
-		glDisable(GL_BLEND);
-		glDepthMask(GL_TRUE);
-		glPopAttrib();
+		// Icon
+
+		if (pLocatorData->m_drawPresets == 6)
+		{
+			if (drawFill)
+			{
+				// Draw fill
+				drawManager.setColor( fillCol );
+				drawManager.mesh(MHWRender::MUIDrawManager::kTriangles, pLocatorData->m_locDrawTriangles);
+			}
+
+			if (pLocatorData->m_lineWidth != 0.0)
+			{
+				// Draw outline
+				drawManager.setColor( lineCol );
+				drawManager.setLineWidth(pLocatorData->m_lineWidth);
+
+				for (int i = 0; i < pLocatorData->m_locDrawPointsA.size(); i++)
+				{
+
+					drawManager.mesh(MHWRender::MUIDrawManager::kLineStrip, pLocatorData->m_locDrawPointsA[i]);
+				}
+
+			}
+
+
+
+
+
+		}
+
+		// Draw Gyroscope
+		if (pLocatorData->m_drawPresets == 7)
+		{
+			// Draw outline
+			drawManager.setColor( lineCol );
+			drawManager.setLineWidth(pLocatorData->m_lineWidth);
+
+			drawManager.setPointSize(5);
+
+			for (int i = 0; i < pLocatorData->m_locDrawPointsA.size(); i++)
+			{
+
+				if (i==0)
+				{
+					drawManager.setColor( lineCol + MColor(0.0,1.0,0.0)  );
+					drawManager.point(pLocatorData->m_locDrawPointsA[i][0]);
+				}
+
+				if (i==1)
+				{
+					drawManager.setColor( lineCol + MColor(0.0,0.0,1.0)  );
+					drawManager.point(pLocatorData->m_locDrawPointsA[i][0]);
+				}
+
+				if (i==2)
+				{
+					drawManager.setColor( lineCol + MColor(1.0,0.0,0.0)  );
+				}
+
+				drawManager.mesh(MHWRender::MUIDrawManager::kLineStrip, pLocatorData->m_locDrawPointsA[i]);
+			}
+
+
+		}
+
+		// Draw Camera
+		if (pLocatorData->m_drawPresets == 8)
+		{
+			if (drawFill)
+			{
+				// Draw fill
+				drawManager.setColor( fillCol );
+				drawManager.mesh(MHWRender::MUIDrawManager::kTriangles, pLocatorData->m_locDrawTriangles);
+			}
+
+			// Draw outline
+			drawManager.setColor( lineCol );
+			drawManager.setLineWidth(pLocatorData->m_lineWidth);
+
+
+			for (int i = 0; i < pLocatorData->m_locDrawPointsA.size(); i++)
+			{
+
+				//drawManager.mesh(MHWRender::MUIDrawManager::kClosedLine, pLocatorData->m_locDrawPoints);
+				drawManager.mesh(MHWRender::MUIDrawManager::kLineStrip,  pLocatorData->m_locDrawPointsA[i]);
+			}
+
+
+		}
+
+
+		// Draw File
+		if (pLocatorData->m_drawPresets == 11)
+		{
+			if (drawFill)
+			{
+				// Draw fill
+				drawManager.setColor( fillCol );
+				drawManager.mesh(MHWRender::MUIDrawManager::kTriangles, pLocatorData->m_locDrawTriangles);
+			}
+
+
+
+			// Draw outline
+			drawManager.setColor( lineCol );
+			drawManager.setLineWidth(pLocatorData->m_lineWidth);
+
+
+			for (int i = 0; i < pLocatorData->m_locDrawPointsA.size(); i++)
+			{
+
+				//drawManager.mesh(MHWRender::MUIDrawManager::kClosedLine, pLocatorData->m_locDrawPoints);
+				drawManager.mesh(MHWRender::MUIDrawManager::kLineStrip,  pLocatorData->m_locDrawPointsA[i]);
+			}
+
+			// MGlobal::displayInfo(MString() + pLocatorData->m_locDrawPointsA.size());
+
+			//if (pLocatorData->m_locDrawPointsA.size() < 2 || pLocatorData->m_locDrawTriangles.length() == 0)
+			//{
+
+			//	drawManager.text(MPoint::origin, "No input point arrays", MHWRender::MUIDrawManager::TextAlignment::kCenter);
+			//}
+
+		}
+
+		// Draw 2D Icons
+		if (pLocatorData->m_drawPresets == 9)
+		{
+
+			center *= pLocatorData->m_rotMatrix;
+			vU *= pLocatorData->m_rotMatrix;
+			center += offV;
+
+			// Draw fill
+			drawManager.setColor( lineCol );
+
+
+#if MAYA_API_VERSION > 201600
+
+
+			if ( pLocatorData->m_draw_twod_IconType == 0) { drawManager.icon(center,"CIRCLE_24",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 1) { drawManager.icon(center,"DIAMOND_24",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 2) { drawManager.icon(center,"SQUARE_24",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 3) { drawManager.icon(center,"UP_TRIANGLE_24",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 4) { drawManager.icon(center,"DOWN_TRIANGLE_24",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 5) { drawManager.icon(center,"HEXAGON_24",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 6) { drawManager.icon(center,"CIRCLE_16",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 7) { drawManager.icon(center,"DIAMOND_16",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 8) { drawManager.icon(center,"SQUARE_16",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 9) { drawManager.icon(center,"UP_TRIANGLE_16",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 10) { drawManager.icon(center,"DOWN_TRIANGLE_16",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 11) { drawManager.icon(center,"RIGHT_TRIANGLE_16",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 12) { drawManager.icon(center,"HEXAGON_16",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 13) { drawManager.icon(center,"RESIZE",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 14) { drawManager.icon(center,"OPTIONS",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 15) { drawManager.icon(center,"POINT_LIGHT",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 16) { drawManager.icon(center,"AMBIENT_LIGHT",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 17) { drawManager.icon(center,"OMNI_EMITTER",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 18) { drawManager.icon(center,"VOLUME_LIGHT",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 19) { drawManager.icon(center,"AIR_FIELD",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 20) { drawManager.icon(center,"DRAG_FIELD",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 21) { drawManager.icon(center,"GRAVITY_FIELD",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 22) { drawManager.icon(center,"NEWTON_FIELD",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 23) { drawManager.icon(center,"RADIAL_FIELD",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 24) { drawManager.icon(center,"TURBULENCE_FIELD",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 25) { drawManager.icon(center,"UNIFORM_FIELD",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 26) { drawManager.icon(center,"VORTEX_FIELD",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 27) { drawManager.icon(center,"UNLOCK_MONO",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 28) { drawManager.icon(center,"LOCK_MONO",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 29) { drawManager.icon(center,"NUCLEUS",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 30) { drawManager.icon(center,"DOT",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 31) { drawManager.icon(center,"CROSS",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 32) { drawManager.icon(center,"DRAG_POINT",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 33) { drawManager.icon(center,"OFF_RADIO_BTN",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 34) { drawManager.icon(center,"FFD_POINT",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 35) { drawManager.icon(center,"CURVE_ENDS",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 36) { drawManager.icon(center,"DRAG_PT",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 37) { drawManager.icon(center,"PIVOT",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 38) { drawManager.icon(center,"HOLLOW_BOX",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 39) { drawManager.icon(center,"ROTATE_PIVOT",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 40) { drawManager.icon(center,"SELECT_HANDLE_ROOT",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 41) { drawManager.icon(center,"SOLID_BOX",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 42) { drawManager.icon(center,"HOLLOW_TRIANGLE",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 43) { drawManager.icon(center,"SCALE_PIVOT",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 44) { drawManager.icon(center,"SELECT_HANDLE",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 45) { drawManager.icon(center,"U_CV",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 46) { drawManager.icon(center,"V_CV",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 47) { drawManager.icon(center,"X_AXIS",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 48) { drawManager.icon(center,"Y_AXIS",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 49) { drawManager.icon(center,"Z_AXIS",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 50) { drawManager.icon(center,"IK",1.0); }
+			if ( pLocatorData->m_draw_twod_IconType == 51) { drawManager.icon(center,"FK",1.0); }
+
+			// drawManager.icon(center,"SCALE_PIVOT",1.0);
+
+#else
+
+			drawManager.setPointSize(5.0);
+			drawManager.point(center);
+
+#endif
+
+
+
+
+
+
+		}
+
+		// Draw A-B line
+		if (pLocatorData->m_drawPresets == 10)
+		{
+
+			// Draw fill
+			drawManager.setColor( lineCol );
+
+			drawManager.setLineWidth(pLocatorData->m_lineWidth);
+			drawManager.line(pLocatorData->m_inLocA_pos, pLocatorData->m_inLocB_pos);
+
+		}
+
+		// Draw text
+		if (pLocatorData->m_dispText)
+		{
+			drawManager.setColor( lineCol );
+			drawManager.setFontSize(pLocatorData->m_textFontSize);
+			drawManager.setFontIncline(pLocatorData->m_textIncline);
+			drawManager.setFontWeight(pLocatorData->m_textWeight);
+			drawManager.setFontStretch(pLocatorData->m_textStretch);
+			drawManager.setFontLine(pLocatorData->m_textLine);
+
+			MString faceName = BaseLocData::m_fFontList[pLocatorData->m_fontFaceIndex];
+			drawManager.setFontName(faceName);
+
+			int boxSize[] = { pLocatorData->m_textBoxWidth, pLocatorData->m_textBoxHeight };
+			drawManager.text(pLocatorData->m_textPosition, pLocatorData->m_text, pLocatorData->m_textAlignment, boxSize[0]+boxSize[1] == 0 ? NULL : boxSize, &pLocatorData->m_textBoxColor, false);
+
+		}
+
+
+		if (pLocatorData->m_dispNum)
+		{
+			drawManager.setColor( lineCol );
+			drawManager.text(MPoint(0.0,0.0,0.0), MString()+pLocatorData->m_locID ,MHWRender::MUIDrawManager::kCenter);
+		}
+
+
+		// Draw icon for selection center
+		if (pLocatorData->m_dispLocPivot)
+		{
+			drawManager.setColor( lineCol );
+			//drawManager.icon(MPoint(0.0,0.0,0.0),"SCALE_PIVOT",1.0);
+#if MAYA_API_VERSION > 201600
+
+			drawManager.icon(center,"SCALE_PIVOT",1.0);
+
+#else
+
+			drawManager.setPointSize(5.0);
+			drawManager.point(center);
+
+#endif
+		}
+
+
 
 	}
+
+#if MAYA_API_VERSION > 201600
+	if (pLocatorData->m_drawOnTop)
+	{
+		drawManager.endDrawInXray();
+	}
+	if (!pLocatorData->m_drawOnTop)
+	{
+		drawManager.endDrawable();
+	}
+#else
+
+	drawManager.endDrawable();
+
+#endif
+
+
+
 }
+
 
 
 MStatus BaseLoc::initialize()

@@ -74,7 +74,6 @@ public:
 	virtual void            draw( M3dView & view, const MDagPath & path, M3dView::DisplayStyle style, M3dView::DisplayStatus status );
 
 	virtual bool            isBounded() const;
-	virtual bool			isTransparent()const;
 	virtual MBoundingBox    boundingBox() const;
 
 	static  void *          creator();
@@ -286,28 +285,10 @@ public:
 
 	virtual MUserData* prepareForDraw( const MDagPath& objPath, const MDagPath& cameraPath, const MHWRender::MFrameContext& frameContext, MUserData* oldData);
 
-	virtual bool hasUIDrawables() const { return false; }
-	// virtual void addUIDrawables( const MDagPath& objPath, MHWRender::MUIDrawManager& drawManager, const MHWRender::MFrameContext& frameContext, const MUserData* data);
+	virtual bool hasUIDrawables() const { return true; }
+	virtual void addUIDrawables( const MDagPath& objPath, MHWRender::MUIDrawManager& drawManager, const MHWRender::MFrameContext& frameContext, const MUserData* data);
 
-	virtual bool traceCallSequence() const
-	{
-		// Return true if internal tracing is desired.
-		return false;
-	}
-
-	virtual void handleTraceMessage(const MString &message) const
-	{
-		MGlobal::displayInfo("BaseLocOverride: " + message);
-		// Some simple custom message formatting.
-		fprintf(stderr, "BaseLocOverride: ");
-		fprintf(stderr, message.asChar());
-		fprintf(stderr, "\n");
-	}
-
-	virtual bool isTransparent()const{ return true; }
-	virtual bool excludedFromPostEffects() const { return true; }
-
-	static void draw(const MHWRender::MDrawContext& context, const MUserData* data); // OpenGl draw call
+	static void draw(const MHWRender::MDrawContext& context, const MUserData* data) {};
 
 protected:
 	MBoundingBox mCurrentBoundingBox;
