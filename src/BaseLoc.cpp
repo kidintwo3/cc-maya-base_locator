@@ -1338,7 +1338,8 @@ MHWRender::DrawAPI BaseLocOverride::supportedDrawAPIs() const
 
 #if MAYA_API_VERSION > 201600
 
-	return (MHWRender::kOpenGL | MHWRender::kDirectX11 | MHWRender::kOpenGLCoreProfile );
+	/*return (MHWRender::kOpenGL | MHWRender::kDirectX11 | MHWRender::kOpenGLCoreProfile );*/
+	return MHWRender::kAllDevices;
 
 #else
 	return (MHWRender::kOpenGL | MHWRender::kDirectX11 );

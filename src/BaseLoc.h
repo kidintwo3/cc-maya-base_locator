@@ -73,6 +73,8 @@ public:
 
 	virtual void            draw( M3dView & view, const MDagPath & path, M3dView::DisplayStyle style, M3dView::DisplayStatus status );
 
+	virtual MPxNode::SchedulingType schedulingType() const override {return MPxNode::kParallel;}
+
 	virtual bool            isBounded() const;
 	virtual MBoundingBox    boundingBox() const;
 
