@@ -58,6 +58,7 @@ MSyntax BaseLocCommand::newSyntax()
 	syntax.addFlag( "-ta", "-triangleArray", MSyntax::kString  );
 
 	syntax.addFlag( "-bb", "-boundingBox", MSyntax::kBoolean  );
+	syntax.addFlag( "-ob", "-objectSpaceBB", MSyntax::kBoolean  );
 
 	syntax.enableEdit( false );
 	syntax.enableQuery( false );
@@ -93,6 +94,7 @@ MStatus BaseLocCommand::doIt( const MArgList& argList )
 	d_offset = 0.0;
 
 	b_boundingbox = false;
+	b_objectSpaceBB = false;
 
 
 	s_locName = MString("untitled");
@@ -121,6 +123,9 @@ MStatus BaseLocCommand::doIt( const MArgList& argList )
 	if ( argData.isFlagSet( "offset" ) ) { d_offset = argData.flagArgumentDouble("offset",0); }
 
 	if ( argData.isFlagSet( "boundingBox" ) ) { b_boundingbox = argData.flagArgumentBool("boundingBox",0); }
+	if ( argData.isFlagSet( "objectSpaceBB" ) ) { b_objectSpaceBB = argData.flagArgumentBool("objectSpaceBB",0); }
+
+
 
 	if ( argData.isFlagSet( "lineArray" ) ) { s_lineA = argData.flagArgumentString("lineArray",0); }
 	if ( argData.isFlagSet( "triangleArray" ) ) { s_triangleA = argData.flagArgumentString("triangleArray",0); }
@@ -219,7 +224,7 @@ MStatus BaseLocCommand::doIt( const MArgList& argList )
 	MSelectionList selObj;
 	MGlobal::getActiveSelectionList(selObj);
 
-	if (selObj.length() != 0 || argData.isFlagSet( "boundingBox" ))
+	if (b_boundingbox)
 	{
 
 		MDagPath currDagPathTr;
@@ -235,7 +240,7 @@ MStatus BaseLocCommand::doIt( const MArgList& argList )
 			if (currDagPathTr.apiType() == MFn::kTransform)
 			{
 
-				
+
 
 				MDagPath currDagPathShape = currDagPathTr;
 
@@ -244,7 +249,7 @@ MStatus BaseLocCommand::doIt( const MArgList& argList )
 				if (status)
 				{
 
-					
+
 
 					MFnTransform fn_transform(currDagPathTr);
 
@@ -294,14 +299,13 @@ MStatus BaseLocCommand::doIt( const MArgList& argList )
 
 					BaseLocCommand::createLocator(argData);
 
-					
+					if(!b_objectSpaceBB)
+					{
+						MTransformationMatrix trMAt(currMat);
 
-					MTransformationMatrix trMAt(currMat);
-					// trMAt.setTranslation(centerP, MSpace::kWorld);
-
-					MFnTransform fn_transform_loc(dag_LocATr);
-					fn_transform_loc.set(trMAt);
-
+						MFnTransform fn_transform_loc(dag_LocATr);
+						fn_transform_loc.set(trMAt);
+					}
 				}
 			}
 		}
@@ -317,9 +321,9 @@ MStatus BaseLocCommand::doIt( const MArgList& argList )
 	//
 	// BaseLocCommand -sp "sphere" -pp "p:/Maya/GitHub/cc-maya-base_locator/presets/" -bl "BaseLoc1";
 	//
+	//
 
-
-	if (selObj.length() == 0)
+	else
 	{
 
 		BaseLocCommand::createLocator(argData);
@@ -372,12 +376,8 @@ MStatus BaseLocCommand::createLocator(MArgDatabase& argData)
 	o_baseLocNodeA.append(o_baseLocNode);
 
 	// Rename it
-	if (argData.isFlagSet( "-name" ))
-	{
-		fnDepTrg.setName( s_locName );
-		MPxCommand::setResult(fnDepTrg.name());
-
-	}
+	fnDepTrg.setName( s_locName, false, &status );
+	CHECK_MSTATUS_AND_RETURN_IT(status);
 
 
 	// Set plugs
@@ -483,6 +483,14 @@ MStatus BaseLocCommand::createLocator(MArgDatabase& argData)
 	CHECK_MSTATUS_AND_RETURN_IT(status);
 	status = p_polyColB.setDouble(b - 0.5);
 	CHECK_MSTATUS_AND_RETURN_IT(status);
+
+	MStringArray resA;
+
+	resA.append(fnDepTrg.name());
+	resA.append(fnDepLocShape.name());
+
+
+	MPxCommand::setResult(resA);
 
 	return MS::kSuccess;
 }

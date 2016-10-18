@@ -83,6 +83,7 @@ private:
 	double					d_offset;
 
 	bool					b_boundingbox;
+	bool					b_objectSpaceBB;
 
 	MString					s_locName;
 
