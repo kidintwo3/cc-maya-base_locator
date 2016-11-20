@@ -78,6 +78,8 @@ public:
 	virtual bool            isBounded() const;
 	virtual MBoundingBox    boundingBox() const;
 
+	virtual bool            isTransparent() const;
+
 	static  void *          creator();
 	static  MStatus         initialize();
 

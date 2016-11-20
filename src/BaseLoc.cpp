@@ -108,7 +108,16 @@ void BaseLoc::postConstructor()
 	BaseLoc::checkPresetFolder();
 }
 
-void* BaseLoc::creator() { return new BaseLoc(); }
+void* BaseLoc::creator() 
+{
+	return new BaseLoc(); 
+}
+
+bool BaseLoc::isTransparent() const
+{ 
+	return true;
+}
+
 
 
 #if MAYA_API_VERSION > 201600
@@ -1087,8 +1096,8 @@ MBoundingBox BaseLoc::boundingBox() const
 	double multiplier;
 	plug.getValue( multiplier );
 
-	MPoint corner1( -1.0, 0.0, -1.0 );
-	MPoint corner2( 1.0, 0.0, 1.0 );
+	MPoint corner1(  -0.5, 0.0, -0.5 );
+	MPoint corner2( 0.5, 0.0, 0.5);
 
 
 	MPlug p;
@@ -1209,23 +1218,35 @@ MBoundingBox BaseLoc::boundingBox() const
 	corner2 = corner2 *multiplier*rM + offV;
 
 
-	// Box, Sphere, Gyroscope
-	if (drawPresets == 1 || drawPresets == 2 || drawPresets == 7)
+	// Box, Sphere, Gyroscope, Cone
+	if (drawPresets == 1 || drawPresets == 2 || drawPresets == 7 || drawPresets == 3)
 	{
 
-		corner1 = MPoint( -multiplier*0.5 + offsetX, -multiplier*0.5 + offsetY , -multiplier*0.5 + offsetZ  );
-		corner2 = MPoint( (multiplier*0.5) + offsetX,  (multiplier*0.5) + offsetY , (multiplier*0.5) + offsetZ );
+		
+		corner1 = MPoint( -0.5, -0.5, 0.5 );
+		corner2 = MPoint( 0.5, 0.5, -0.5 );
 
-		corner1 *= rM;
-		corner2 *= rM;
+		corner1 = (corner1*multiplier *rM) + offV;
+		corner2 = (corner2*multiplier *rM) + offV;
 
-		corner1 += MVector(localPosX,localPosY,localPosZ);
-		corner2 += MVector(localPosX,localPosY,localPosZ);
+	}
+
+		// Camera
+	if (drawPresets == 8 )
+	{
+
+		
+		corner1 = MPoint( -0.2, -0.145, -0.2 );
+		corner2 = MPoint( 0.2, 0.45, 0.8 );
+
+		corner1 = (corner1*multiplier *rM) + offV;
+		corner2 = (corner2*multiplier *rM) + offV;
 
 	}
 
 
-	if ( drawPresets == 3 || drawPresets == 5  )
+	// Drag handle
+	if ( drawPresets == 5  )
 	{
 
 		corner1 = MPoint( -multiplier*0.5, 0.0, 0.0 );
@@ -1338,8 +1359,7 @@ MHWRender::DrawAPI BaseLocOverride::supportedDrawAPIs() const
 
 #if MAYA_API_VERSION > 201600
 
-	/*return (MHWRender::kOpenGL | MHWRender::kDirectX11 | MHWRender::kOpenGLCoreProfile );*/
-	return MHWRender::kAllDevices;
+	return (MHWRender::kOpenGL | MHWRender::kDirectX11 | MHWRender::kOpenGLCoreProfile );
 
 #else
 	return (MHWRender::kOpenGL | MHWRender::kDirectX11 );
@@ -1371,8 +1391,8 @@ MBoundingBox BaseLocOverride::boundingBox( const MDagPath& objPath, const MDagPa
 	}
 
 
-	MPoint corner1( -1.0, 0.0, -1.0 );
-	MPoint corner2( 1.0, 0.0, 1.0 );
+	MPoint corner1(  -0.5, 0.0, -0.5 );
+	MPoint corner2( 0.5, 0.0, 0.5 );
 
 	MPlug p;
 
@@ -1476,42 +1496,59 @@ MBoundingBox BaseLocOverride::boundingBox( const MDagPath& objPath, const MDagPa
 
 
 
+
+
 	MEulerRotation rotOffEuler ( rotateX  * ( M_PI / 180.0 ), rotateY  * ( M_PI / 180.0 ), rotateZ * ( M_PI / 180.0 ), MEulerRotation::kXYZ );
 	MTransformationMatrix rotOffTMatrix;
 
-	rotOffTMatrix.setScale(scale, MSpace::kObject); 
+
+	rotOffTMatrix.setScale(scale, MSpace::kObject);
 	rotOffTMatrix.rotateBy(rotOffEuler, MSpace::kObject);
 
 	MMatrix rM = rotOffTMatrix.asMatrix();
-
 
 
 	// OFFEST Vector
 	MVector offV(offsetX,offsetY,offsetZ);
 	offV += MVector(localPosX,localPosY,localPosZ);
 
+
+
 	corner1 = corner1 *multiplier*rM + offV;
 	corner2 = corner2 *multiplier*rM + offV;
 
+	
 
-	// Box, Sphere, Gyroscope
-	if (drawPresets == 1 || drawPresets == 2 || drawPresets == 7)
+	// Box, Sphere, Gyroscope, Cone
+	if (drawPresets == 1 || drawPresets == 2 || drawPresets == 7 || drawPresets == 3)
 	{
 
-		corner1 = MPoint( -multiplier*0.5 + offsetX, -multiplier*0.5 + offsetY , -multiplier*0.5 + offsetZ  );
-		corner2 = MPoint( (multiplier*0.5) + offsetX,  (multiplier*0.5) + offsetY , (multiplier*0.5) + offsetZ );
+		
+		corner1 = MPoint( -0.5, -0.5, 0.5 );
+		corner2 = MPoint( 0.5, 0.5, -0.5 );
 
-		corner1 *= rM;
-		corner2 *= rM;
+		corner1 = (corner1*multiplier *rM) + offV;
+		corner2 = (corner2*multiplier *rM) + offV;
 
-		corner1 += MVector(localPosX,localPosY,localPosZ);
-		corner2 += MVector(localPosX,localPosY,localPosZ);
+	}
+
+	// Camera
+	if (drawPresets == 8 )
+	{
+
+		
+		corner1 = MPoint( -0.2, -0.145, -0.2 );
+		corner2 = MPoint( 0.2, 0.45, 0.8 );
+
+		corner1 = (corner1*multiplier *rM) + offV;
+		corner2 = (corner2*multiplier *rM) + offV;
 
 	}
 
 
+
 	// Drag handle
-	if ( drawPresets == 3 || drawPresets == 5  )
+	if ( drawPresets == 5  )
 	{
 
 		corner1 = MPoint( -multiplier*0.5, 0.0, 0.0 );
