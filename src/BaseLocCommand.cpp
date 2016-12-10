@@ -97,7 +97,7 @@ MStatus BaseLocCommand::doIt( const MArgList& argList )
 	b_objectSpaceBB = false;
 
 
-	s_locName = MString("untitled");
+	s_locName = MString("baseLoc#");
 
 	o_baseLocNodeA.clear();
 
@@ -221,8 +221,6 @@ MStatus BaseLocCommand::doIt( const MArgList& argList )
 	}
 
 
-	MSelectionList selObj;
-	MGlobal::getActiveSelectionList(selObj);
 
 	if (b_boundingbox)
 	{
@@ -294,6 +292,10 @@ MStatus BaseLocCommand::doIt( const MArgList& argList )
 					d_scX = bb_currMesh.width();
 					d_scY = bb_currMesh.height();
 					d_scZ = bb_currMesh.depth();
+
+					d_offX = bb_currMesh.center().x;
+					d_offY = bb_currMesh.center().y;
+					d_offZ = bb_currMesh.center().z;
 
 					// MGlobal::displayInfo(MString() + bb_currMesh.center().x + "," + bb_currMesh.center().y + "," + bb_currMesh.center().z);
 
@@ -369,16 +371,19 @@ MStatus BaseLocCommand::createLocator(MArgDatabase& argData)
 	}
 
 	// Create locator
-	o_baseLocNode = m_DEPNode.create("BaseLoc", &status);
+	o_baseLocNode = m_DEPNode.create(MTypeId(0x00123942), &status);
 	CHECK_MSTATUS_AND_RETURN_IT(status);
 	MFnDependencyNode fnDepTrg( o_baseLocNode );
 
 	o_baseLocNodeA.append(o_baseLocNode);
 
-	// Rename it
-	fnDepTrg.setName( s_locName, false, &status );
-	CHECK_MSTATUS_AND_RETURN_IT(status);
 
+	if ( argData.isFlagSet( "name" ) )
+	{
+		// Rename it
+		fnDepTrg.setName( s_locName, false, &status );
+		CHECK_MSTATUS_AND_RETURN_IT(status);
+	}
 
 	// Set plugs
 	MDagPath dag_LocA;
@@ -491,6 +496,11 @@ MStatus BaseLocCommand::createLocator(MArgDatabase& argData)
 
 
 	MPxCommand::setResult(resA);
+
+	MSelectionList selList;
+	selList.add(fnDepTrg.name());
+
+	MGlobal::setActiveSelectionList(selList);
 
 	return MS::kSuccess;
 }

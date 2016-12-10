@@ -100,7 +100,7 @@ BaseLoc::~BaseLoc() {}
 void BaseLoc::postConstructor()
 {
 	MFnDependencyNode nodeFn(thisMObject());
-	nodeFn.setName("BaseLocShape#");
+	nodeFn.setName("baseLocShape#");
 
 	m_fileInitialized = false;
 
