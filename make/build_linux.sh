@@ -1,9 +1,11 @@
-versions=('2015' '2016' '2016.5' '2017')
-op_system='mac'
+versions=('2015', '2016')
+op_system='linux'
 plugin_name='baseLoc'
-make_dir='/Users/hunyadijanos/Documents/GIT/cc-maya-base_locator/make/build/'$op_system'/'
-destination_dir='/Users/hunyadijanos/Documents/GIT/cc-maya-base_locator/build/'$op_system'/'
+make_dir='/home/jani/Desktop/baseLoc/build/'$op_system'/'
+destination_dir='/home/jani/Desktop/baseLoc/build/'$op_system'/'
 
+echo "Starting build..."
+echo ""
 
 for i in "${versions[@]}"
 	do
@@ -13,7 +15,7 @@ for i in "${versions[@]}"
 			# echo $destination_dir$i
 			cmake --build $make_dir$i --config Release
 			
-			bundle_file=$make_dir$i'/src/Release/'$plugin_name'.bundle'
+			bundle_file=$make_dir$i'/src/Release/'$plugin_name'.su'
 			
 			
 			if [ -e $bundle_file ]
@@ -21,10 +23,12 @@ for i in "${versions[@]}"
 				mkdir -p $destination_dir$i
 				
 				cp $bundle_file $destination_dir$i
-
 			fi
 			
 		fi
 		
 	done
+
+echo ""
+echo "Build finished..."
 
