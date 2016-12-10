@@ -73,6 +73,12 @@ MStatus BaseLocCommand::doIt( const MArgList& argList )
 
 	MArgDatabase argData( syntax(), argList, &status );
 
+	// clear commmand result
+	m_resA.clear();
+
+	// clear command result selection list
+	m_selList.clear();
+
 	// Presets
 	i_preset = 0;
 	i_icontype = 0;
@@ -308,12 +314,15 @@ MStatus BaseLocCommand::doIt( const MArgList& argList )
 						MFnTransform fn_transform_loc(dag_LocATr);
 						fn_transform_loc.set(trMAt);
 					}
+
+					//MPxCommand::setResult(m_resA);
+					//MGlobal::setActiveSelectionList(m_selList);
 				}
 			}
 		}
 
 
-		return::MStatus::kSuccess;
+		//return redoIt();
 
 	}
 
@@ -327,11 +336,13 @@ MStatus BaseLocCommand::doIt( const MArgList& argList )
 
 	else
 	{
-
 		BaseLocCommand::createLocator(argData);
 
 
 	}
+
+	MPxCommand::setResult(m_resA);
+	MGlobal::setActiveSelectionList(m_selList);
 
 	// BaseLocCommand -pa  "0.5,0.5,0.5,0.5,-0.5,0.5,0.5,-0.5,-0.5,0.5,0.5,-0.5,0.5,0.5,0.5,0.5,0.5,-0.5,-0.5,0.5,-0.5,-0.5,0.5,0.5,0.5,0.5,0.5,0.0,0.0,0.0,0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,0.5,-0.5,0.0,0.0,0.0,-0.5,-0.5,-0.5,-0.5,-0.5,0.5,-0.5,0.5,0.5,0.0,0.0,0.0,-0.5,-0.5,0.5,0.5,-0.5,0.5" -ta "-0.5,-0.5,0.5,0.5,-0.5,0.5,-0.5,0.5,0.5,-0.5,0.5,0.5,0.5,-0.5,0.5,0.5,0.5,0.5,-0.5,0.5,0.5,0.5,0.5,0.5,-0.5,0.5,-0.5,-0.5,0.5,-0.5,0.5,0.5,0.5,0.5,0.5,-0.5,-0.5,0.5,-0.5,0.5,0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,0.5,0.5,-0.5,0.5,-0.5,-0.5,-0.5,-0.5,-0.5,0.5,-0.5,-0.5,-0.5,-0.5,0.5,-0.5,-0.5,0.5,0.5,-0.5,-0.5,0.5,-0.5,0.5,0.5,-0.5,0.5,0.5,-0.5,-0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,-0.5,-0.5,0.5,0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,0.5,-0.5,0.5,-0.5,-0.5,0.5,-0.5,-0.5,-0.5,0.5,-0.5,0.5,0.5";
 
@@ -489,18 +500,13 @@ MStatus BaseLocCommand::createLocator(MArgDatabase& argData)
 	status = p_polyColB.setDouble(b - 0.5);
 	CHECK_MSTATUS_AND_RETURN_IT(status);
 
-	MStringArray resA;
 
-	resA.append(fnDepTrg.name());
-	resA.append(fnDepLocShape.name());
+	m_resA.append(fnDepTrg.name());
+	m_resA.append(fnDepLocShape.name());
+
+	m_selList.add(fnDepTrg.name());
 
 
-	MPxCommand::setResult(resA);
-
-	MSelectionList selList;
-	selList.add(fnDepTrg.name());
-
-	MGlobal::setActiveSelectionList(selList);
 
 	return MS::kSuccess;
 }

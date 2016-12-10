@@ -87,6 +87,9 @@ private:
 
 	MString					s_locName;
 
+	MStringArray			m_resA;
+	MSelectionList			m_selList;
+
 };
 
 
