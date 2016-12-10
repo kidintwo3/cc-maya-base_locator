@@ -27,6 +27,9 @@
 *.out
 *.app
 
+# Make files
+/make/build/*
+
 # =========================
 # Operating System Files
 # =========================

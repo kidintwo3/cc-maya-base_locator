@@ -73,7 +73,9 @@ public:
 
 	virtual void            draw( M3dView & view, const MDagPath & path, M3dView::DisplayStyle style, M3dView::DisplayStatus status );
 
+	#if MAYA_API_VERSION > 201600
 	virtual MPxNode::SchedulingType schedulingType() const override {return MPxNode::kParallel;}
+	#endif
 
 	virtual bool            isBounded() const;
 	virtual MBoundingBox    boundingBox() const;

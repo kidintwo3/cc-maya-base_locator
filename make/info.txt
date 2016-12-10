@@ -1,0 +1,9 @@
+
+# Install CMAKE Gui on MAC
+sudo "/Applications/CMake.app/Contents/bin/cmake-gui" --install
+
+
+
+# MAC - (run it from the "build/osx/2016" directory)
+cmake -G "Xcode" -DMAYA_VERSION=2016 ../../../
+cmake --build . --config Release
