@@ -60,6 +60,7 @@ MSyntax BaseLocCommand::newSyntax()
 	syntax.addFlag( "-bb", "-boundingBox", MSyntax::kBoolean  );
 	syntax.addFlag( "-ob", "-objectSpaceBB", MSyntax::kBoolean  );
 	syntax.addFlag( "-br", "-resetYBB", MSyntax::kBoolean  );
+	syntax.addFlag( "-an", "-annotate", MSyntax::kString  );
 
 	syntax.enableEdit( false );
 	syntax.enableQuery( false );
@@ -103,6 +104,7 @@ MStatus BaseLocCommand::doIt( const MArgList& argList )
 	b_boundingbox = false;
 	b_objectSpaceBB = false;
 	b_resetYBB = false;
+	b_annotate = "";
 
 
 	s_locName = MString("baseLoc#");
@@ -133,6 +135,7 @@ MStatus BaseLocCommand::doIt( const MArgList& argList )
 	if ( argData.isFlagSet( "boundingBox" ) ) { b_boundingbox = argData.flagArgumentBool("boundingBox",0); }
 	if ( argData.isFlagSet( "objectSpaceBB" ) ) { b_objectSpaceBB = argData.flagArgumentBool("objectSpaceBB",0); }
 	if ( argData.isFlagSet( "resetYBB" ) ) { b_resetYBB = argData.flagArgumentBool("resetYBB",0); }
+	if ( argData.isFlagSet( "annotate" ) ) { b_annotate = argData.flagArgumentString("annotate",0); }
 
 
 	if ( argData.isFlagSet( "lineArray" ) ) { s_lineA = argData.flagArgumentString("lineArray",0); }
@@ -301,7 +304,7 @@ MStatus BaseLocCommand::doIt( const MArgList& argList )
 					d_scY = bb_currMesh.height();
 					d_scZ = bb_currMesh.depth();
 
-					
+
 
 					d_offX = bb_currMesh.center().x;
 					d_offY = bb_currMesh.center().y;
@@ -480,6 +483,25 @@ MStatus BaseLocCommand::createLocator(MArgDatabase& argData)
 	CHECK_MSTATUS_AND_RETURN_IT(status);
 	MPlug p_polyColB = fnDepLocShape.findPlug("polygonColorB", &status);
 	CHECK_MSTATUS_AND_RETURN_IT(status);
+
+	if ( b_annotate.length() != 0 )
+	{
+		MPlug p_dispText = fnDepLocShape.findPlug("displayText", &status);
+		CHECK_MSTATUS_AND_RETURN_IT(status);
+		status = p_dispText.setBool( true );
+		CHECK_MSTATUS_AND_RETURN_IT(status);
+
+		MPlug p_text = fnDepLocShape.findPlug("text", &status);
+		CHECK_MSTATUS_AND_RETURN_IT(status);
+		status = p_dispText.setString( b_annotate );
+		CHECK_MSTATUS_AND_RETURN_IT(status);
+
+		MPlug p_testPosY = fnDepLocShape.findPlug("textPosition1", &status);
+		CHECK_MSTATUS_AND_RETURN_IT(status);
+		status = p_testPosY.setDouble( d_scY*0.5 + ((d_scY * 0.5) * 0.25) );
+		CHECK_MSTATUS_AND_RETURN_IT(status);
+
+	}
 
 
 	status = p_preset.setInt( i_preset );

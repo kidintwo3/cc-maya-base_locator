@@ -1894,6 +1894,10 @@ MUserData* BaseLocOverride::prepareForDraw( const MDagPath& objPath, const MDagP
 		nData.getData(data->m_textPosition.x, data->m_textPosition.y, data->m_textPosition.z);
 		data->m_textPosition.w = 1.0f;
 
+		data->m_textPosition.x += data->m_offsetX;
+		data->m_textPosition.y += data->m_offsetY;
+		data->m_textPosition.z += data->m_offsetZ;
+
 		// Get line Style
 		p = MPlug( o_BaseLocNode, BaseLoc::aText );
 		data->m_text = p.asString();

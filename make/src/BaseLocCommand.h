@@ -85,7 +85,8 @@ private:
 	bool					b_boundingbox;
 	bool					b_objectSpaceBB;
 	bool					b_resetYBB;
-
+	
+	MString					b_annotate;
 	MString					s_locName;
 
 	MStringArray			m_resA;
