@@ -59,6 +59,7 @@ MSyntax BaseLocCommand::newSyntax()
 
 	syntax.addFlag( "-bb", "-boundingBox", MSyntax::kBoolean  );
 	syntax.addFlag( "-ob", "-objectSpaceBB", MSyntax::kBoolean  );
+	syntax.addFlag( "-br", "-resetYBB", MSyntax::kBoolean  );
 
 	syntax.enableEdit( false );
 	syntax.enableQuery( false );
@@ -101,6 +102,7 @@ MStatus BaseLocCommand::doIt( const MArgList& argList )
 
 	b_boundingbox = false;
 	b_objectSpaceBB = false;
+	b_resetYBB = false;
 
 
 	s_locName = MString("baseLoc#");
@@ -130,7 +132,7 @@ MStatus BaseLocCommand::doIt( const MArgList& argList )
 
 	if ( argData.isFlagSet( "boundingBox" ) ) { b_boundingbox = argData.flagArgumentBool("boundingBox",0); }
 	if ( argData.isFlagSet( "objectSpaceBB" ) ) { b_objectSpaceBB = argData.flagArgumentBool("objectSpaceBB",0); }
-
+	if ( argData.isFlagSet( "resetYBB" ) ) { b_resetYBB = argData.flagArgumentBool("resetYBB",0); }
 
 
 	if ( argData.isFlagSet( "lineArray" ) ) { s_lineA = argData.flagArgumentString("lineArray",0); }
@@ -257,8 +259,8 @@ MStatus BaseLocCommand::doIt( const MArgList& argList )
 
 					MFnTransform fn_transform(currDagPathTr);
 
-					MPoint rot_piv = fn_transform.rotatePivot(MSpace::kWorld);
-					MPoint scale_piv = fn_transform.scalePivot(MSpace::kWorld);
+					MPoint rot_piv = fn_transform.rotatePivot(MSpace::kObject);
+					MPoint scale_piv = fn_transform.scalePivot(MSpace::kObject);
 
 					MMatrix currMat = fn_transform.transformationMatrix(&status);
 					CHECK_MSTATUS_AND_RETURN_IT(status);
@@ -299,9 +301,13 @@ MStatus BaseLocCommand::doIt( const MArgList& argList )
 					d_scY = bb_currMesh.height();
 					d_scZ = bb_currMesh.depth();
 
+					
+
 					d_offX = bb_currMesh.center().x;
 					d_offY = bb_currMesh.center().y;
 					d_offZ = bb_currMesh.center().z;
+
+
 
 					// MGlobal::displayInfo(MString() + bb_currMesh.center().x + "," + bb_currMesh.center().y + "," + bb_currMesh.center().z);
 
@@ -313,6 +319,24 @@ MStatus BaseLocCommand::doIt( const MArgList& argList )
 
 						MFnTransform fn_transform_loc(dag_LocATr);
 						fn_transform_loc.set(trMAt);
+
+
+						if (b_resetYBB)
+						{
+							//fn_transform_loc.setRotatePivot(MPoint(d_offX, (rot_piv.y - d_scY) -d_offY, d_offZ), MSpace::kObject, true);
+							//fn_transform_loc.setScalePivot(MPoint(d_offX, (scale_piv.y - d_scY) -d_offY, d_offZ), MSpace::kObject, true);
+
+							fn_transform_loc.setRotatePivot(MPoint(d_offX, bb_currMesh.min().y, d_offZ), MSpace::kObject, true);
+							fn_transform_loc.setScalePivot(MPoint(d_offX, bb_currMesh.min().y, d_offZ), MSpace::kObject, true);
+
+						}
+
+						else
+						{
+							fn_transform_loc.setRotatePivot(MPoint(rot_piv.x, rot_piv.y, rot_piv.z), MSpace::kObject, true);
+							fn_transform_loc.setScalePivot(MPoint(scale_piv.x, scale_piv.y, scale_piv.z), MSpace::kObject, true);
+						}
+
 					}
 
 					//MPxCommand::setResult(m_resA);

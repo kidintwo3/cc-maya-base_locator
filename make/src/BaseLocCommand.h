@@ -84,6 +84,7 @@ private:
 
 	bool					b_boundingbox;
 	bool					b_objectSpaceBB;
+	bool					b_resetYBB;
 
 	MString					s_locName;
 
