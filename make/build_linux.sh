@@ -1,4 +1,4 @@
-versions=('2015', '2016')
+versions=('2016' '2016.5' '2017' '2018')
 op_system='linux'
 plugin_name='baseLoc'
 make_dir='/home/jani/Desktop/baseLoc/build/'$op_system'/'

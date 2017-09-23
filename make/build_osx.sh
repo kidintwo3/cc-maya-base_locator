@@ -1,4 +1,4 @@
-versions=('2015' '2016' '2016.5' '2017')
+versions=('2016' '2016.5' '2017' '2018')
 op_system='mac'
 plugin_name='baseLoc'
 make_dir='/Users/hunyadijanos/Documents/GIT/cc-maya-base_locator/make/build/'$op_system'/'

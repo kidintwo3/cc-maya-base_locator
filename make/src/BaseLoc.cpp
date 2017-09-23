@@ -122,7 +122,7 @@ bool BaseLoc::isTransparent() const
 
 #if MAYA_API_VERSION > 201600
 
-BaseLocOverride::BaseLocOverride(const MObject& obj) : MHWRender::MPxDrawOverride(obj, BaseLocOverride::draw, false)
+BaseLocOverride::BaseLocOverride(const MObject& obj) : MHWRender::MPxDrawOverride(obj, BaseLocOverride::draw)
 {
 	fModelEditorChangedCbId = MEventMessage::addEventCallback("modelEditorChanged", OnModelEditorChanged, this);
 	MStatus status;
@@ -2394,7 +2394,7 @@ void BaseLocOverride::addUIDrawables( const MDagPath& objPath, MHWRender::MUIDra
 	int apiVer = MGlobal::apiVersion();
 
 
-#if MAYA_API_VERSION > 201600
+#if MAYA_API_VERSION < 201600
 	if (pLocatorData->m_drawOnTop )
 	{
 		drawManager.beginDrawInXray();
@@ -2969,7 +2969,7 @@ void BaseLocOverride::addUIDrawables( const MDagPath& objPath, MHWRender::MUIDra
 
 	}
 
-#if MAYA_API_VERSION > 201600
+#if MAYA_API_VERSION < 201600
 	if (pLocatorData->m_drawOnTop)
 	{
 		drawManager.endDrawInXray();
