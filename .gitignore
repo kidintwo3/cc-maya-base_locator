@@ -98,3 +98,12 @@ $RECYCLE.BIN/
 *.xcuserstate
 
 *.xcworkspacedata
+*.rule
+*.check_cache
+*.bin
+*.stamp
+*.depend
+*.list
+*.filters
+*.cache
+*.TMP

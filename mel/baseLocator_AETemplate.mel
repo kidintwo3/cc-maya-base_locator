@@ -33,6 +33,11 @@ global proc AEBaseLocTemplate( string $nodeName )
 	editorTemplate -endLayout;
 
 	editorTemplate -beginLayout "Transforms" -collapse 0;
+	editorTemplate -addControl "mirrorX";
+	editorTemplate -addControl "mirrorY";
+	editorTemplate -addControl "mirrorZ";
+	editorTemplate -addControl "worldSpace";
+	editorTemplate -addSeparator;
 	editorTemplate -addControl "offsetX";
 	editorTemplate -addControl "offsetY";
 	editorTemplate -addControl "offsetZ";

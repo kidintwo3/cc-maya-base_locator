@@ -135,6 +135,11 @@ public:
 	static MObject		aFadeDistance;
 	static MObject		aFadeByDistance;
 
+	static MObject		aMirrorX;
+	static MObject		aMirrorY;
+	static MObject		aMirrorZ;
+	static MObject		aWorldSpace;
+
 	// Text attributes
 	static MObject		aDispText;
 	static MObject		aTextPosition;
@@ -145,6 +150,7 @@ public:
 	static MObject      aTextLine;
 	static MObject      aTextBoxSize;
 	static MObject      aText;
+	static MObject      aTextInputFloat;
 	static MObject      aTextBoxColor;
 	static MObject      aTextBoxTransparency;
 	static MObject      aTextFontSize;
@@ -197,9 +203,14 @@ public:
 
 
 	MPointArray				m_locDrawPoints;
+	MPointArray				m_locDrawPoints_mirror;
 	vector<MPointArray>		m_locDrawPointsA;
+	vector<MPointArray>		m_locDrawPointsA_mirror;
 	MPointArray				m_locDrawTriangles;
+	MPointArray				m_locDrawTriangles_mirror;
 	MPoint					m_locDrawCenter;
+
+
 
 	bool					m_orient;
 	bool					m_dispObj;
@@ -207,6 +218,11 @@ public:
 	bool					m_dispNum;
 	bool					m_dispLoc;
 	bool					m_drawOnTop;
+
+	bool					m_mirror_x;
+	bool					m_mirror_y;
+	bool					m_mirror_z;
+	bool					m_worldSpace;
 
 	int						m_drawPresets;
 	int						m_drawIconType;
@@ -248,6 +264,7 @@ public:
 	bool					m_dispText;
 	bool					m_dispLocPivot;
 
+	MString					m_textInputFloat;
 	MString					m_text;
 	unsigned int			m_textFontSize;
 	unsigned int			m_fontFaceIndex;
@@ -313,6 +330,8 @@ private:
 	MMatrix m_modelViewMat;
 	MPoint m_bbCorner1;
 	MPoint m_bbCorner2;
+
+	bool				m_debug;
 
 };
 
