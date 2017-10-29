@@ -1554,8 +1554,8 @@ MBoundingBox BaseLocOverride::boundingBox(const MDagPath& objPath, const MDagPat
 	//corner2.y *= scaleY;
 	//corner2.z *= scaleZ;
 
-	corner1 *= multiplier;
-	corner2 *= multiplier;
+	corner1 = corner1 * multiplier;
+	corner2 = corner2 * multiplier;
 
 	corner1 *= rM;
 	corner2 *= rM;
