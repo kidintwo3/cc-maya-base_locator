@@ -311,6 +311,18 @@ public:
 
 	bool					m_init;
 
+	// text stuff
+
+	MString					m_text_double3_x;
+	MString					m_text_double3_y;
+	MString					m_text_double3_z;
+
+	MString					m_text_float;
+
+	double					m_angle;
+
+	MMatrix					m_inLoc_mat;
+
 };
 
 

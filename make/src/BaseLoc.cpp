@@ -1832,6 +1832,8 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 	MPointArray inPointArray;
 	MPointArray inTriangleArray;
 
+
+
 	if (status)
 	{
 
@@ -2126,12 +2128,16 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 
 			tempStr = MString() + "x: " + x.c_str() + " y: " + y.c_str() + " z: " + z.c_str();
 
+			data->m_text_double3_x = MString() + x.c_str();
+			data->m_text_double3_y = MString() + y.c_str();
+			data->m_text_double3_z = MString() + z.c_str();
 
 		}
 
 		if (data->m_draw_textType == 4)
 		{
-
+			p = MPlug(o_BaseLocNode, BaseLoc::aInputDouble);
+			data->m_angle = p.asDouble() *  (M_PI / 180.0);
 		}
 
 
@@ -2757,6 +2763,8 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 
 	// get correct color based on the state of object, e.g. active or dormant
 	data->m_locColor = MHWRender::MGeometryUtilities::wireframeColor(objPath);
+
+	data->m_inLoc_mat = objPath.exclusiveMatrix();
 
 	return data;
 }
@@ -3483,32 +3491,201 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 		// Draw text
 		if (pLocatorData->m_dispText)
 		{
-			drawManager.setColor(lineCol);
-			drawManager.setFontSize(pLocatorData->m_textFontSize);
-			drawManager.setFontIncline(pLocatorData->m_textIncline);
-			drawManager.setFontWeight(pLocatorData->m_textWeight);
-			drawManager.setFontStretch(pLocatorData->m_textStretch);
-			drawManager.setFontLine(pLocatorData->m_textLine);
 
-			MString faceName = BaseLocData::m_fFontList[pLocatorData->m_fontFaceIndex];
-			drawManager.setFontName(faceName);
-
-			int boxSize[] = { pLocatorData->m_textBoxWidth, pLocatorData->m_textBoxHeight };
-			drawManager.text(pLocatorData->m_textPosition, pLocatorData->m_text, pLocatorData->m_textAlignment, boxSize[0] + boxSize[1] == 0 ? NULL : boxSize, &pLocatorData->m_textBoxColor, false);
-
-
-
-			if (pLocatorData->m_offsetX != 0.0)
+			if (pLocatorData->m_draw_textType == 0)
 			{
-				if (pLocatorData->m_mirror_x || pLocatorData->m_mirror_y || pLocatorData->m_mirror_z)
-				{
-					MPoint mirrorX_point(-pLocatorData->m_textPosition.x, pLocatorData->m_textPosition.y, pLocatorData->m_textPosition.z);
 
-					drawManager.text(mirrorX_point, pLocatorData->m_text, pLocatorData->m_textAlignment, boxSize[0] + boxSize[1] == 0 ? NULL : boxSize, &pLocatorData->m_textBoxColor, false);
+				drawManager.setColor(lineCol);
+				drawManager.setFontSize(pLocatorData->m_textFontSize);
+				drawManager.setFontIncline(pLocatorData->m_textIncline);
+				drawManager.setFontWeight(pLocatorData->m_textWeight);
+				drawManager.setFontStretch(pLocatorData->m_textStretch);
+				drawManager.setFontLine(pLocatorData->m_textLine);
+
+				MString faceName = BaseLocData::m_fFontList[pLocatorData->m_fontFaceIndex];
+				drawManager.setFontName(faceName);
+
+				int boxSize[] = { pLocatorData->m_textBoxWidth, pLocatorData->m_textBoxHeight };
+				drawManager.text(pLocatorData->m_textPosition, pLocatorData->m_text, pLocatorData->m_textAlignment, boxSize[0] + boxSize[1] == 0 ? NULL : boxSize, &pLocatorData->m_textBoxColor, false);
+
+
+
+				if (pLocatorData->m_offsetX != 0.0)
+				{
+					if (pLocatorData->m_mirror_x || pLocatorData->m_mirror_y || pLocatorData->m_mirror_z)
+					{
+						MPoint mirrorX_point(-pLocatorData->m_textPosition.x, pLocatorData->m_textPosition.y, pLocatorData->m_textPosition.z);
+
+						drawManager.text(mirrorX_point, pLocatorData->m_text, pLocatorData->m_textAlignment, boxSize[0] + boxSize[1] == 0 ? NULL : boxSize, &pLocatorData->m_textBoxColor, false);
+					}
+
 				}
+			}
+
+			if (pLocatorData->m_draw_textType == 2)
+			{
+				drawManager.setFontName("Arial");
+
+
+
+				MPoint p = MPoint::origin;
+				p *= pLocatorData->m_inLoc_mat;
+
+				double ox, oy;
+				frameContext.worldToViewport(p, ox, oy);
+
+				oy += 20;
+
+				MString time_str = MString() + "frame: " +pLocatorData->m_currentTime.as(MTime::kFilm);
+
+				drawManager.setFontSize(15);
+				drawManager.setColor(MColor(0.0, 0.0, 0.0, 1.0));
+				drawManager.text2d(MPoint(ox, oy), time_str);
+
+				drawManager.setColor(MColor(1.0, 1.0, 1.0, 1.0));
+				drawManager.text2d(MPoint(ox, oy + 2), time_str);
 
 			}
 
+
+			if (pLocatorData->m_draw_textType == 3)
+			{
+	
+				drawManager.setFontName("Arial");
+				
+
+
+				MPoint p = MPoint::origin;
+				p *= pLocatorData->m_inLoc_mat;
+
+				double x_off = 20;
+				double y_off = 2;
+				double fontsize = 15;
+
+
+				double ox, oy, ox_orig, oy_orig;
+				frameContext.worldToViewport(p, ox_orig, oy_orig);
+
+				ox = ox_orig;
+				oy = oy_orig;
+
+
+				// X
+
+				oy = oy_orig + 60;
+
+				drawManager.setColor(MColor(0.0, 0.0, 0.0, 1.0));
+				drawManager.setFontSize(fontsize);
+				drawManager.text2d(MPoint(ox, oy), "x:");
+				drawManager.setFontSize(fontsize - 2);
+				drawManager.text2d(MPoint(ox + x_off, oy), pLocatorData->m_text_double3_x);
+
+
+				drawManager.setColor(MColor(1.0, 0.2, 0.2, 1.0));
+				drawManager.setFontSize(fontsize);
+				drawManager.text2d(MPoint(ox, oy + y_off), "x:");
+
+				drawManager.setColor(MColor(1.0, 1.0, 1.0, 1.0));
+				drawManager.setFontSize(fontsize - 2);
+				drawManager.text2d(MPoint(ox + x_off, oy+ y_off), pLocatorData->m_text_double3_x);
+
+				// Y
+
+				oy = oy_orig + 40;
+
+				drawManager.setColor(MColor(0.0, 0.0, 0.0, 1.0));
+				drawManager.setFontSize(fontsize);
+				drawManager.text2d(MPoint(ox, oy), "y:");
+				drawManager.setFontSize(fontsize - 2);
+				drawManager.text2d(MPoint(ox + x_off, oy), pLocatorData->m_text_double3_y);
+
+				
+				drawManager.setColor(MColor(0.2, 1.0, 0.2, 1.0));
+				drawManager.setFontSize(fontsize);
+				drawManager.text2d(MPoint(ox, oy + y_off), "y:");
+
+				drawManager.setColor(MColor(1.0, 1.0, 1.0, 1.0));
+				drawManager.setFontSize(fontsize - 2);
+				drawManager.text2d(MPoint(ox + x_off, oy + y_off), pLocatorData->m_text_double3_y);
+
+				// Z
+
+				oy = oy_orig + 20;
+
+				drawManager.setColor(MColor(0.0, 0.0, 0.0, 1.0));
+				drawManager.setFontSize(fontsize);
+				drawManager.text2d(MPoint(ox, oy), "z:");
+				drawManager.setFontSize(fontsize - 2);
+				drawManager.text2d(MPoint(ox + x_off, oy), pLocatorData->m_text_double3_z);
+
+				
+				drawManager.setColor(MColor(0.2, 0.2, 1.0, 1.0));
+				drawManager.setFontSize(fontsize);
+				drawManager.text2d(MPoint(ox, oy + y_off), "z:");
+
+				drawManager.setColor(MColor(1.0, 1.0, 1.0, 1.0));
+				drawManager.setFontSize(fontsize-2);
+				drawManager.text2d(MPoint(ox + x_off, oy + y_off), pLocatorData->m_text_double3_z);
+
+			}
+
+			if (pLocatorData->m_draw_textType == 4)
+			{
+
+				MPoint p = MPoint::origin;
+				p *= pLocatorData->m_inLoc_mat;
+
+				double y_off = 80;
+				double fontsize = 15;
+				double radius = 40;
+
+
+				double ox, oy, ox_orig, oy_orig;
+				frameContext.worldToViewport(p, ox_orig, oy_orig);
+
+				ox = ox_orig;
+				oy = oy_orig;
+
+
+				float angle = pLocatorData->m_angle;
+
+				float newX = radius * cos(angle);
+				float newY = radius * sin(angle);
+
+				MVector aV = MPoint::origin + MVector(0.0, radius, 0.0);
+				MVector bV = MPoint::origin + MVector(newX, newY, 0.0);
+
+
+
+
+				drawManager.setColor(MColor(0.5,0.0,0.0, 0.5));
+				drawManager.circle2d(MPoint(ox, oy + y_off),  radius+3, true);
+				
+
+				drawManager.setColor(MColor(1.0, 1.0, 1.0, 0.5));
+				drawManager.arc2d(MPoint(ox, oy + y_off), aV, bV, radius, false);
+				drawManager.line2d(MPoint(ox, oy + y_off), MPoint(ox, oy + y_off) + aV);
+				drawManager.line2d(MPoint(ox, oy + y_off), MPoint(ox, oy + y_off) + bV);
+				
+				drawManager.setColor(MColor(0.0, 0.0, 0.0, 0.5));
+				drawManager.arc2d(MPoint(ox, oy + y_off), aV, bV, radius, true);
+
+				drawManager.setColor(MColor(1.0, 1.0, 1.0, 0.8));
+				drawManager.circle2d(MPoint(ox, oy + y_off), radius + 2, false);
+
+				//
+
+				MString tempStr = MString() + angle *  (180.0/ M_PI);
+
+				drawManager.setFontSize(15);
+				drawManager.setColor(MColor(0.0, 0.0, 0.0, 1.0));
+				drawManager.text2d(MPoint(ox - radius*0.5, oy + 10 ), tempStr);
+
+				drawManager.setColor(MColor(1.0, 1.0, 1.0, 1.0));
+				drawManager.text2d(MPoint(ox - radius*0.5, oy +  10 + 2), tempStr);
+	
+
+			}
 
 		}
 
