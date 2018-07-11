@@ -34,7 +34,7 @@ void icons_data_write()
 	writeIcon_binary(path, "out_BaseLoc.png", out_BaseLoc_png_start, sizeof(out_BaseLoc_png_start));
 	writeIcon_binary(path, "BaseLoc_bb.png", BaseLoc_bb_png_start, sizeof(BaseLoc_bb_png_start));
 	writeIcon_binary(path, "BaseLoc.png", BaseLoc_png_start, sizeof(BaseLoc_png_start));
-	writeIcon_binary(path, "baseLoc_Refresh.png", BaseLoc_png_start, sizeof(BaseLoc_png_start));
+	writeIcon_binary(path, "baseLoc_Refresh.png", baseLoc_Refresh_png_start, sizeof(baseLoc_Refresh_png_start));
 	writeIcon_binary(path, "baseLoc_Plus.png", baseLoc_Plus_png_start, sizeof(baseLoc_Plus_png_start));
 	writeIcon_binary(path, "baseLoc_Minus.png", baseLoc_Minus_png_start, sizeof(baseLoc_Minus_png_start));
 	writeIcon_binary(path, "baseLoc_CCLogo.png", baseLoc_CCLogo_png_start , sizeof(baseLoc_CCLogo_png_start));

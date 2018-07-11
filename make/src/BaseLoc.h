@@ -35,6 +35,7 @@
 #include <maya/MFnPointArrayData.h>
 #include <maya/MCallbackIdArray.h>
 #include <maya/MEventMessage.h>
+#include <maya/MDGModifier.h>
 
 // Viewport 2.0 includes
 #include <maya/MDrawRegistry.h>
@@ -47,7 +48,7 @@
 #include <fstream>
 #include <sstream>
 #include <algorithm>
-
+#include <iomanip> // setprecision
 
 using namespace std;
 
@@ -88,7 +89,9 @@ public:
 
 public:
 
-	MStatus                 checkPresetFolder();
+	MStatus				calculate_speed(MFloatVector goal);
+
+	MStatus             checkPresetFolder();
 
 	static MString		drawDbClassification;
 	static MString		drawRegistrantId;
@@ -129,6 +132,7 @@ public:
 	static MObject      aDrawPresets;
 	static MObject      aDrawIconsTypes;
 	static MObject      aTwoDIconsTypes;
+	static MObject      aTextyType;
 
 	static MObject		aLineWidth;
 	static MObject      aPointSize;
@@ -156,6 +160,7 @@ public:
 	static MObject      aTextFontSize;
 	static MObject      aFontFaceName;
 
+	static MObject		aInputDouble;
     
     static MObject		aInLocPosA;
     static MObject		aInLocPosB;
@@ -169,12 +174,27 @@ public:
 	static MObject		aBoundingBoxA;
 	static MObject		aBoundingBoxB;
 
+	static MObject		aInput3Double;
+
+	static MObject		aTime;
+
 private:
 	MMatrix				m_modelViewMat;
 	bool				m_fileInitialized;
 
 	MFileObject         o_presetPath;
 	MString             s_readPluginPath;
+
+	MTime				m_currentTime;
+	int					m_startFrame;
+
+	MTime				m_previousTime;
+	MPoint				m_currentPosition;
+	MPoint				m_previousPosition;
+	bool				m_init;
+
+	MFloatVector		m_offsetVector;
+
 };
 
 //---------------------------------------------------------------------------
@@ -226,6 +246,7 @@ public:
 
 	int						m_drawPresets;
 	int						m_drawIconType;
+	int						m_draw_textType;
 	int						m_draw_twod_IconType;
 	float					m_lineWidth;
 	int						m_pointSize;
@@ -283,10 +304,12 @@ public:
 
 	static MStringArray		m_fFontList;
 
-	double					m_inTime;
+	//double					m_inTime;
 
 
-	
+	MTime					m_currentTime;
+
+	bool					m_init;
 
 };
 

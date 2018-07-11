@@ -57,6 +57,8 @@ global proc AEBaseLocTemplate( string $nodeName )
 	editorTemplate -endLayout;
 
 	editorTemplate -beginLayout "Text" -collapse 0;
+	editorTemplate -addControl "textyType";
+	editorTemplate -addSeparator;
 	editorTemplate -addControl "textPosition";
 	editorTemplate -addControl "textFontSize";
 	editorTemplate -addSeparator;

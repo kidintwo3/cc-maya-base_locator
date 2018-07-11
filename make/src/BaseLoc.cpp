@@ -65,7 +65,9 @@ MObject     BaseLoc::aPaintStyle;
 MObject     BaseLoc::aDrawPresets;
 MObject		BaseLoc::aDrawIconsTypes;
 MObject		BaseLoc::aTwoDIconsTypes;
+MObject		BaseLoc::aTextyType;
 
+MObject		BaseLoc::aInputDouble;
 
 MObject		BaseLoc::aTextPosition;
 MObject		BaseLoc::aTextAlignment;
@@ -93,6 +95,10 @@ MObject		BaseLoc::aInTriangleArray;
 MObject		BaseLoc::aBoundingBoxA;
 MObject		BaseLoc::aBoundingBoxB;
 
+MObject		BaseLoc::aInput3Double;
+
+MObject     BaseLoc::aTime;
+
 MString		BaseLoc::drawDbClassification("drawdb/geometry/BaseLoc");
 MString		BaseLoc::drawRegistrantId("BaseLocPlugin");
 
@@ -105,6 +111,9 @@ BaseLoc::~BaseLoc() {}
 
 void BaseLoc::postConstructor()
 {
+
+	MStatus status;
+
 	MFnDependencyNode nodeFn(thisMObject());
 	nodeFn.setName("baseLocShape#");
 
@@ -112,6 +121,27 @@ void BaseLoc::postConstructor()
 
 	// Check preset folder
 	BaseLoc::checkPresetFolder();
+
+	// Connect time
+
+	MDGModifier dgMod;
+
+	//- Connect time1 node with transCircle node
+	MObject timeNode;
+	MSelectionList selList;
+	MGlobal::getSelectionListByName(MString("time1"), selList);
+	selList.getDependNode(0, timeNode);
+	selList.clear();
+
+	MFnDependencyNode fnTimeNode(timeNode);
+
+	
+	MObject timeAttr = fnTimeNode.attribute(MString("outTime"), &status);
+	MObject inputAttr = nodeFn.attribute(MString("time"), &status);
+	dgMod.connect(timeNode, timeAttr, thisMObject(), inputAttr);
+
+	dgMod.doIt();
+
 }
 
 void* BaseLoc::creator()
@@ -172,6 +202,53 @@ void BaseLocOverride::OnModelEditorChanged(void *clientData)
 }
 
 // ----------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+MStatus BaseLoc::calculate_speed(MFloatVector goal)
+{
+
+	if (!m_init)
+	{
+		m_previousTime = m_currentTime;
+		m_currentPosition = goal;
+		m_previousPosition = goal;
+		m_init = true;
+	}
+
+
+	float timeDifference = float(m_currentTime.value() - m_previousTime.value());
+
+	if (timeDifference > 1.0 || timeDifference < 0.0 || m_currentTime.value() < m_startFrame)
+	{
+
+		m_init = false;
+		m_previousTime = m_currentTime;
+
+		m_offsetVector = MFloatVector(0.0, 0.0, 0.0);
+
+		return MStatus::kSuccess;
+	}
+
+
+
+	MVector velocity = m_currentPosition - m_previousPosition;
+	MPoint newPosition = m_currentPosition + velocity;
+	MVector goalForce = goal - newPosition;
+	newPosition += goalForce;
+
+	//Store the states for the next computation
+	m_previousPosition = MPoint(m_currentPosition);
+	m_currentPosition = MPoint(newPosition);
+	m_previousTime = MTime(m_currentTime);
+
+	newPosition = goal + (MVector(newPosition) - goal);
+
+
+	m_offsetVector = MFloatVector(newPosition.x, newPosition.y, newPosition.z);
+
+
+	return MStatus::kSuccess;
+}
 
 // VP 1.0 functions
 
@@ -1807,12 +1884,6 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 		p = MPlug(o_BaseLocNode, BaseLoc::localPositionZ);
 		p.getValue(data->m_localPosZ);
 
-		//// Get time
-		//p = MPlug(o_BaseLocNode, BaseLoc::aTime);
-		//MTime currentTime;
-		//p.getValue(currentTime);
-		//data->m_inTime = currentTime.value();
-
 
 		// Get offsetX
 		p = MPlug(o_BaseLocNode, BaseLoc::aOffsetX);
@@ -1868,6 +1939,11 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 		// Get 2D icon draw type
 		p = MPlug(o_BaseLocNode, BaseLoc::aTwoDIconsTypes);
 		p.getValue(data->m_draw_twod_IconType);
+
+
+		// Get 2D icon draw type
+		p = MPlug(o_BaseLocNode, BaseLoc::aTextyType);
+		p.getValue(data->m_draw_textType);
 
 		// Get radius
 		p = MPlug(o_BaseLocNode, BaseLoc::aRadius);
@@ -1939,6 +2015,16 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 		c = p.child(2);
 		c.getValue(data->m_polygonColor.b);
 
+
+		// Get line Style
+		p = MPlug(o_BaseLocNode, BaseLoc::aTime);
+		p.getValue(data->m_paintStyle);
+
+		// Get time
+		p = MPlug(o_BaseLocNode, BaseLoc::aTime);
+		p.getValue(data->m_currentTime);
+
+
 		// Text
 
 
@@ -1995,6 +2081,54 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 		p = MPlug(o_BaseLocNode, BaseLoc::aText);
 
 		MString tempStr = p.asString();
+
+
+		// Get text types
+
+		if (data->m_draw_textType == 1)
+		{
+			// Get line Style
+			p = MPlug(o_BaseLocNode, BaseLoc::aInputDouble);
+			tempStr = MString() +  p.asDouble();
+
+
+		}
+
+		if (data->m_draw_textType == 2)
+		{
+			tempStr = MString() + data->m_currentTime.as(MTime::kFilm);
+			
+
+		}
+
+		if (data->m_draw_textType == 3)
+		{
+			p = MPlug(o_BaseLocNode, BaseLoc::aInput3Double);
+			MFnNumericData numdFn_BBB(p.asMObject());
+			double v3fVal_BBB[3];
+			numdFn_BBB.getData3Double(v3fVal_BBB[0], v3fVal_BBB[1], v3fVal_BBB[2]);
+
+
+			int precision = 3;
+
+			stringstream stream_x;
+			stream_x << fixed << setprecision(precision) << v3fVal_BBB[0];
+			string x = stream_x.str();
+
+			stringstream stream_y;
+			stream_y << fixed << setprecision(precision) << v3fVal_BBB[1];
+			string y = stream_y.str();
+
+			stringstream stream_z;
+			stream_z << fixed << setprecision(precision) << v3fVal_BBB[2];
+			string z = stream_z.str();
+
+
+			tempStr = MString() + "x: " + x.c_str() + " y: " + y.c_str() + " z: " + z.c_str();
+
+
+		}
+
 
 		data->m_text = tempStr;
 
@@ -3553,6 +3687,16 @@ MStatus BaseLoc::initialize()
 	addAttribute(aTwoDIconsTypes);
 
 
+	aTextyType = eAttr.create("textyType", "textyType", 0);
+	eAttr.setStorable(true);
+	eAttr.addField("String", 0);
+	eAttr.addField("Input", 1);
+	eAttr.addField("Time", 2);
+	eAttr.addField("3 Double", 3);
+	eAttr.setDefault(6);
+
+	addAttribute(aTextyType);
+
 	// ---------------------------------------------------------------------------------------------------
 	// Size
 
@@ -3590,6 +3734,14 @@ MStatus BaseLoc::initialize()
 	nAttr.setKeyable(true);
 	nAttr.setChannelBox(true);
 	addAttribute(aRadius);
+
+	// Input
+
+	aInputDouble = nAttr.create("inputDouble", "inputDouble", MFnNumericData::kDouble);
+	nAttr.setStorable(false);
+	nAttr.setKeyable(false);
+	nAttr.setChannelBox(false);
+	addAttribute(aInputDouble);
 
 	// Offset
 
@@ -3983,6 +4135,15 @@ MStatus BaseLoc::initialize()
 	nAttr.setInternal(true);
 	addAttribute(aBoundingBoxB);
 
+	aInput3Double = nAttr.create("input3Double", "input3Double", MFnNumericData::k3Double);
+	nAttr.setStorable(true);
+	nAttr.setInternal(false);
+	addAttribute(aInput3Double);
+
+	aTime = uAttr.create("time", "time", MFnUnitAttribute::kTime, 0.0);
+	uAttr.setWritable(true);
+	uAttr.setReadable(false);
+	addAttribute(aTime);
 
 	return MS::kSuccess;
 }

@@ -35,6 +35,12 @@ MStatus initializePlugin( MObject obj )
 		MGlobal::executeCommand(mel_createShelf());
 	}
 
+	MStringArray aeTemplateA = mel_AETemplate();
+
+	for (int i = 0; i < aeTemplateA.length(); i++)
+	{
+		MGlobal::executeCommand(aeTemplateA[i]);
+	}
 
 
 	// Locator
