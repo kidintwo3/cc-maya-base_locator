@@ -12,17 +12,30 @@
 #include "AETemplate.h"
 
 #include <maya/MFnPlugin.h>
+#include <maya/MCommonSystemUtils.h>
 
 MStatus initializePlugin( MObject obj )
 {
 	MStatus status;
 
-	MFnPlugin fnPlugin( obj, "Creative Case", "1.85", "Any" );
+	MFnPlugin fnPlugin( obj, "Creative Case", "1.9", "Any" );
 
-	icons_data_write();
 
-	MGlobal::executeCommand( mel_createShelf() );
-	MGlobal::executeCommand( mel_AETemplate() );
+	MString rebuild_icons = MCommonSystemUtils::getEnv("BASELOC_REBUILD_ICONS", &status);
+
+	if (!rebuild_icons.asShort())
+	{
+		icons_data_write();
+	}
+
+	MString rebuild_shelf = MCommonSystemUtils::getEnv("BASELOC_REBUILD_SHELF", &status);
+
+	if (!rebuild_shelf.asShort())
+	{
+		MGlobal::executeCommand(mel_createShelf());
+	}
+
+
 
 	// Locator
 	status = fnPlugin.registerNode( "BaseLoc", BaseLoc::id, &BaseLoc::creator, &BaseLoc::initialize, MPxNode::kLocatorNode, &BaseLoc::drawDbClassification);
