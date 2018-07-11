@@ -2129,6 +2129,11 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 
 		}
 
+		if (data->m_draw_textType == 4)
+		{
+
+		}
+
 
 		data->m_text = tempStr;
 
@@ -3693,6 +3698,7 @@ MStatus BaseLoc::initialize()
 	eAttr.addField("Input", 1);
 	eAttr.addField("Time", 2);
 	eAttr.addField("3 Double", 3);
+	eAttr.addField("Angle", 4);
 	eAttr.setDefault(6);
 
 	addAttribute(aTextyType);
