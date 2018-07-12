@@ -21,6 +21,7 @@
 #include <maya/MFnNumericAttribute.h>
 #include <maya/MFnTypedAttribute.h>
 #include <maya/MFnGenericAttribute.h>
+#include <maya/MFnArrayAttrsData.h>
 #include <maya/MFnEnumAttribute.h>
 #include <maya/MFnStringData.h>
 #include <maya/MStringArray.h>
@@ -32,10 +33,11 @@
 #include <maya/MTime.h>
 #include <maya/MFileObject.h>
 #include <maya/MFileIO.h>
-#include <maya/MFnPointArrayData.h>
 #include <maya/MCallbackIdArray.h>
 #include <maya/MEventMessage.h>
 #include <maya/MDGModifier.h>
+#include <maya/MVectorArray.h>
+#include <maya/MFnVectorArrayData.h>
 
 // Viewport 2.0 includes
 #include <maya/MDrawRegistry.h>
@@ -175,6 +177,7 @@ public:
 	static MObject		aBoundingBoxB;
 
 	static MObject		aInput3Double;
+	static MObject		aInputPoints;
 
 	static MObject		aTime;
 
@@ -323,6 +326,11 @@ public:
 
 	MMatrix					m_inLoc_mat;
 
+	//
+	MPointArray				m_inPoints;
+	MIntArray				m_inPointIDs;
+	MVectorArray			m_inPointRotations;
+
 };
 
 
@@ -354,6 +362,8 @@ protected:
 
 private:
 
+	MStatus getVectorArray(MFnArrayAttrsData &particleFn, const MString vectorName, MVectorArray &vectorArray, bool &exists);
+	MStatus getDoubleArray(MFnArrayAttrsData &particleFn, const MString doubleName, MDoubleArray &doubleArray, bool &exists);
 
 	BaseLocOverride(const MObject& obj);
 

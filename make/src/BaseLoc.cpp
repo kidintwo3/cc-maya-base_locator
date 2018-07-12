@@ -96,6 +96,7 @@ MObject		BaseLoc::aBoundingBoxA;
 MObject		BaseLoc::aBoundingBoxB;
 
 MObject		BaseLoc::aInput3Double;
+MObject		BaseLoc::aInputPoints;
 
 MObject     BaseLoc::aTime;
 
@@ -135,7 +136,7 @@ void BaseLoc::postConstructor()
 
 	MFnDependencyNode fnTimeNode(timeNode);
 
-	
+
 	MObject timeAttr = fnTimeNode.attribute(MString("outTime"), &status);
 	MObject inputAttr = nodeFn.attribute(MString("time"), &status);
 	dgMod.connect(timeNode, timeAttr, thisMObject(), inputAttr);
@@ -1806,6 +1807,56 @@ MBoundingBox BaseLocOverride::boundingBox(const MDagPath& objPath, const MDagPat
 }
 
 
+/*************************************************************************************/
+// function to extract vector array information from an arrayAttr
+MStatus BaseLocOverride::getVectorArray(MFnArrayAttrsData &particleFn, const MString vectorName, MVectorArray &vectorArray, bool &exists)
+{
+	MStatus status;
+	MFnArrayAttrsData::Type arrayType;
+
+
+	exists = false;
+
+	if (particleFn.checkArrayExist(vectorName, arrayType, &status))
+	{
+
+		if (arrayType == MFnArrayAttrsData::kVectorArray)
+		{
+			vectorArray = particleFn.vectorArray(vectorName, &status);
+			exists = true;
+
+		}
+
+	}
+	return status;
+}
+
+/*************************************************************************************/
+// function to extract double array information from an arrayAttr
+MStatus BaseLocOverride::getDoubleArray(MFnArrayAttrsData &particleFn, const MString doubleName, MDoubleArray &doubleArray, bool &exists)
+{
+	MStatus status;
+	MFnArrayAttrsData::Type arrayType;
+
+
+	exists = false;
+
+	if (particleFn.checkArrayExist(doubleName, arrayType, &status))
+	{
+		if (arrayType == MFnArrayAttrsData::kDoubleArray)
+		{
+			doubleArray = particleFn.doubleArray(doubleName, &status);
+			exists = true;
+
+		}
+	}
+
+	return status;
+}
+
+
+
+
 // Called by Maya each time the object needs to be drawn.
 MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPath& cameraPath, const MHWRender::MFrameContext& frameContext, MUserData* oldData)
 {
@@ -1853,7 +1904,185 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 		MFnPointArrayData fn_aTriangles(o_inTriangleArray);
 		fn_aTriangles.copyTo(inTriangleArray);
 
-		// Get input Locator Matricies
+		// Get input point array
+		p = MPlug(o_BaseLocNode, BaseLoc::aInputPoints);
+
+		// Get particle data
+		MFnArrayAttrsData particleFn(p.asMObject(), &status);
+
+		MIntArray mapObjectIdToDisplayList;
+
+		MVectorArray instancePosition;	// list of all instance positions
+		MVectorArray instanceRotation;    // rotations
+		MVectorArray instanceScale; 	// scale
+		MDoubleArray instanceVisibility;
+		MIntArray 	 instanceDisplayList;
+		MVectorArray instanceColor;
+
+		data->m_inPoints.clear();
+		data->m_inPointIDs.clear();
+		data->m_inPointRotations.clear();
+
+		bool positionExists, objectIdExists, rotationExists;
+
+
+		//
+
+		// the position array is our reference, it is mandatory
+		status = getVectorArray(particleFn, "position", instancePosition, positionExists);
+
+		if (positionExists)
+		{
+			for (auto i = 0; i < instancePosition.length(); i++)
+			{
+				data->m_inPoints.append(instancePosition[i]);
+			}
+
+		}
+
+
+		status = getVectorArray(particleFn, "rotationPP", instanceRotation, rotationExists);
+		if (rotationExists)
+		{
+
+			data->m_inPointRotations = instanceRotation;
+
+		}
+
+
+		//MGlobal::displayInfo(MString() + instanceRotation.length() + ", " + instancePosition.length());
+
+		//
+
+
+
+	/*	MDoubleArray objectId;
+		status = getDoubleArray(particleFn, "instancePP", objectId, objectIdExists);
+
+		if (objectIdExists)
+		{
+			for (auto i = 0; i < objectId.length(); i++)
+			{
+				data->m_inPointIDs.append(int(objectId[i]));
+			}
+		}
+
+
+		MGlobal::displayInfo(MString() + objectId.length() + ", " + instancePosition.length());
+*/
+
+//if (positionExists)
+//{
+
+
+
+
+///*	instanceCount = instancePosition.length();
+//	mInstanceDataReady = true;*/
+
+
+//	//// rotation
+//	//status = getVectorArray(particleFn, "rotation", instanceRotation, rotationExists);
+//	//if (rotationExists)
+//	//{
+//	//	mInstanceDataReady = (instanceRotation.length() == instanceCount);
+
+//	//	//convert rotation from radians to degrees
+//	//	if (rotUnit == 1)
+//	//		for (int i = 0; i<instanceRotation.length(); i++)
+//	//			instanceRotation[i] *= 57.2957;
+
+//	//}
+//	//else
+//	//	instanceRotation = MVectorArray(instanceCount, MVector::zero);
+
+//	//// scale
+//	//if (mInstanceDataReady)
+//	//{
+//	//	status = getVectorArray(particleFn, "scalePP", instanceScale, scaleExists);
+//	//	if (scaleExists)
+//	//		mInstanceDataReady = (instanceScale.length() == instanceCount);
+//	//	else
+//	//		instanceScale = MVectorArray(instanceCount, MVector(1, 1, 1));
+//	//}
+
+//	//// color
+//	//if (mInstanceDataReady)
+//	//{
+//	//	status = getVectorArray(particleFn, "rgbPP", instanceColor, colorExists);
+//	//	if (colorExists)
+//	//	{
+//	//		mInstanceDataReady = (instanceColor.length() == instanceCount);
+//	//	}
+//	//	else
+//	//		// get default value and build an array
+//	//		instanceColor = MVectorArray(instanceCount, MVector(color.x, color.y, color.z));
+//	//}
+
+//	//// visibility
+//	//if (mInstanceDataReady)
+//	//{
+//	//	status = getDoubleArray(particleFn, "visibility", instanceVisibility, visibilityExists);
+//	//	if (visibilityExists)
+//	//	{
+//	//		mInstanceDataReady = (instanceVisibility.length() == instanceCount);
+//	//	}
+//	//	else
+//	//		// everything is visible by default
+//	//		// todo, maybe add a percentage?
+//	//		instanceVisibility = MDoubleArray(instanceCount, 1.0);
+//	//}
+
+
+//	//// object id
+//	//// in here determine which display list every instance will use
+//	//if (mInstanceDataReady)
+//	//{
+//	//	MDoubleArray objectId;
+//	//	status = getDoubleArray(particleFn, "objectId", objectId, objectIdExists);
+//	//	if (objectIdExists)
+//	//	{
+//	//		mInstanceDataReady = (objectId.length() == instanceCount);
+//	//		if (mInstanceDataReady)
+//	//		{
+//	//			instanceDisplayList = MIntArray(instanceCount);
+//	//			int max = mapObjectIdToDisplayList.length() - 1;
+//	//			for (int i = 0; i<instanceCount; i++)
+//	//			{
+//	//				// if an id doesn't have a valid instance id, then don't show it
+//	//				int id = int(objectId[i]);
+//	//				if (id<0 || id >max)
+//	//					instanceVisibility[i] = 0.0;
+//	//				else
+//	//					instanceDisplayList[i] = instanceVisibility[i] = mapObjectIdToDisplayList[id];
+//	//			}
+
+//	//		}
+//	//	}
+//	//	else
+//	//	{
+//	//		// get default value and build an array
+//	//		instanceDisplayList = MIntArray(instanceCount, mapObjectIdToDisplayList[defaultObjectId]);
+//	//	}
+
+//
+
+//	//}
+
+
+//}
+
+
+
+
+//
+
+
+
+
+
+
+// Get input Locator Matricies
 		p = MPlug(o_BaseLocNode, BaseLoc::aInLocPosA);
 		MObject o_inlocMatA;
 		p.getValue(o_inlocMatA);
@@ -2087,22 +2316,26 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 
 		// Get text types
 
+		// Standard
 		if (data->m_draw_textType == 1)
 		{
 			// Get line Style
 			p = MPlug(o_BaseLocNode, BaseLoc::aInputDouble);
-			tempStr = MString() +  p.asDouble();
+			tempStr = MString() + p.asDouble();
 
 
 		}
 
+		// Time
 		if (data->m_draw_textType == 2)
 		{
 			tempStr = MString() + data->m_currentTime.as(MTime::kFilm);
-			
+
 
 		}
 
+
+		// 3 Double
 		if (data->m_draw_textType == 3)
 		{
 			p = MPlug(o_BaseLocNode, BaseLoc::aInput3Double);
@@ -2134,10 +2367,12 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 
 		}
 
+
+		// Angle
 		if (data->m_draw_textType == 4)
 		{
 			p = MPlug(o_BaseLocNode, BaseLoc::aInputDouble);
-			data->m_angle = p.asDouble() *  (M_PI / 180.0);
+			data->m_angle = p.asDouble();
 		}
 
 
@@ -2789,7 +3024,7 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 	if (!pLocatorData->m_drawOnTop)
 	{
 		drawManager.beginDrawable();
-	}
+}
 
 #else
 	drawManager.beginDrawable();
@@ -3522,6 +3757,7 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 				}
 			}
 
+			// Frame counter
 			if (pLocatorData->m_draw_textType == 2)
 			{
 				drawManager.setFontName("Arial");
@@ -3536,7 +3772,7 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 
 				oy += 20;
 
-				MString time_str = MString() + "frame: " +pLocatorData->m_currentTime.as(MTime::kFilm);
+				MString time_str = MString() + "frame: " + pLocatorData->m_currentTime.as(MTime::kFilm);
 
 				drawManager.setFontSize(15);
 				drawManager.setColor(MColor(0.0, 0.0, 0.0, 1.0));
@@ -3547,12 +3783,12 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 
 			}
 
-
+			// 3 Double
 			if (pLocatorData->m_draw_textType == 3)
 			{
-	
+
 				drawManager.setFontName("Arial");
-				
+
 
 
 				MPoint p = MPoint::origin;
@@ -3587,7 +3823,7 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 
 				drawManager.setColor(MColor(1.0, 1.0, 1.0, 1.0));
 				drawManager.setFontSize(fontsize - 2);
-				drawManager.text2d(MPoint(ox + x_off, oy+ y_off), pLocatorData->m_text_double3_x);
+				drawManager.text2d(MPoint(ox + x_off, oy + y_off), pLocatorData->m_text_double3_x);
 
 				// Y
 
@@ -3599,7 +3835,7 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 				drawManager.setFontSize(fontsize - 2);
 				drawManager.text2d(MPoint(ox + x_off, oy), pLocatorData->m_text_double3_y);
 
-				
+
 				drawManager.setColor(MColor(0.2, 1.0, 0.2, 1.0));
 				drawManager.setFontSize(fontsize);
 				drawManager.text2d(MPoint(ox, oy + y_off), "y:");
@@ -3618,17 +3854,18 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 				drawManager.setFontSize(fontsize - 2);
 				drawManager.text2d(MPoint(ox + x_off, oy), pLocatorData->m_text_double3_z);
 
-				
+
 				drawManager.setColor(MColor(0.2, 0.2, 1.0, 1.0));
 				drawManager.setFontSize(fontsize);
 				drawManager.text2d(MPoint(ox, oy + y_off), "z:");
 
 				drawManager.setColor(MColor(1.0, 1.0, 1.0, 1.0));
-				drawManager.setFontSize(fontsize-2);
+				drawManager.setFontSize(fontsize - 2);
 				drawManager.text2d(MPoint(ox + x_off, oy + y_off), pLocatorData->m_text_double3_z);
 
 			}
 
+			// Angle
 			if (pLocatorData->m_draw_textType == 4)
 			{
 
@@ -3649,41 +3886,82 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 
 				float angle = pLocatorData->m_angle;
 
+				//*(M_PI / 180.0)
+
 				float newX = radius * cos(angle);
 				float newY = radius * sin(angle);
 
-				MVector aV = MPoint::origin + MVector(0.0, radius, 0.0);
-				MVector bV = MPoint::origin + MVector(newX, newY, 0.0);
+				MVector aV = MVector(0.0, radius);
+				MVector bV = MVector(newY, newX);
 
 
 
 
-				drawManager.setColor(MColor(0.5,0.0,0.0, 0.5));
-				drawManager.circle2d(MPoint(ox, oy + y_off),  radius+3, true);
-				
+				drawManager.setColor(MColor(0.5, 0.0, 0.0, 0.5));
+				drawManager.circle2d(MPoint(ox, oy + y_off), radius + 4, true);
+
+				drawManager.setColor(MColor(1.0, 1.0, 1.0, 0.05));
+				drawManager.arc2d(MPoint(ox, oy + y_off), aV, bV, radius, true);
 
 				drawManager.setColor(MColor(1.0, 1.0, 1.0, 0.5));
 				drawManager.arc2d(MPoint(ox, oy + y_off), aV, bV, radius, false);
+
 				drawManager.line2d(MPoint(ox, oy + y_off), MPoint(ox, oy + y_off) + aV);
 				drawManager.line2d(MPoint(ox, oy + y_off), MPoint(ox, oy + y_off) + bV);
-				
-				drawManager.setColor(MColor(0.0, 0.0, 0.0, 0.5));
-				drawManager.arc2d(MPoint(ox, oy + y_off), aV, bV, radius, true);
 
-				drawManager.setColor(MColor(1.0, 1.0, 1.0, 0.8));
-				drawManager.circle2d(MPoint(ox, oy + y_off), radius + 2, false);
+
+
+				drawManager.setColor(MColor(1.0, 0.2, 0.2, 0.5));
+				drawManager.circle2d(MPoint(ox, oy + y_off), radius + 4, false);
 
 				//
 
-				MString tempStr = MString() + angle *  (180.0/ M_PI);
+				MString tempStr = MString() + pLocatorData->m_angle *  (180.0 / M_PI);
 
 				drawManager.setFontSize(15);
 				drawManager.setColor(MColor(0.0, 0.0, 0.0, 1.0));
-				drawManager.text2d(MPoint(ox - radius*0.5, oy + 10 ), tempStr);
+				drawManager.text2d(MPoint(ox - radius*0.5, oy + 10), tempStr);
 
 				drawManager.setColor(MColor(1.0, 1.0, 1.0, 1.0));
-				drawManager.text2d(MPoint(ox - radius*0.5, oy +  10 + 2), tempStr);
-	
+				drawManager.text2d(MPoint(ox - radius*0.5, oy + 10 + 2), tempStr);
+
+
+			}
+
+			if (pLocatorData->m_draw_textType == 5)
+			{
+
+				drawManager.setColor(MColor(1.0, 0.0, 0.0, 1.0));
+				drawManager.setPointSize(2);
+				drawManager.points(pLocatorData->m_inPoints, false);
+
+				drawManager.setFontSize(12);
+
+				for (auto i = 0; i < pLocatorData->m_inPoints.length(); i++)
+				{
+
+					MString tempStr = MString() + i;
+
+					MPoint p = pLocatorData->m_inPoints[i];
+					double ox, oy;
+					frameContext.worldToViewport(p, ox, oy);
+
+					drawManager.setColor(MColor(1.0, 0.0, 0.0, 1.0));
+					drawManager.circle2d(MPoint(ox, oy), 2, true);
+
+					//drawManager.setColor(MColor(1.0, 0.3, 0.3, 1.0));
+					//drawManager.circle2d(MPoint(ox, oy), 4, false);
+
+					drawManager.setColor(MColor(0.0, 0.0, 0.0, 1.0));
+					drawManager.text2d(MPoint(ox, oy + 2), tempStr);
+
+					drawManager.setColor(MColor(1.0, 1.0, 1.0, 1.0));
+					drawManager.text2d(MPoint(ox, oy + 4), tempStr);
+
+
+
+				}
+
 
 			}
 
@@ -3694,7 +3972,7 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 		{
 			drawManager.setColor(lineCol);
 			drawManager.text(MPoint(0.0, 0.0, 0.0), MString() + pLocatorData->m_locID, MHWRender::MUIDrawManager::kCenter);
-	}
+		}
 
 
 		// Draw icon for selection center
@@ -3716,7 +3994,7 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 
 
 
-}
+	}
 
 #if MAYA_API_VERSION < 201600
 	if (pLocatorData->m_drawOnTop)
@@ -3735,7 +4013,7 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 
 
 
-		}
+}
 
 
 
@@ -3876,6 +4154,7 @@ MStatus BaseLoc::initialize()
 	eAttr.addField("Time", 2);
 	eAttr.addField("3 Double", 3);
 	eAttr.addField("Angle", 4);
+	eAttr.addField("Points", 5);
 	eAttr.setDefault(6);
 
 	addAttribute(aTextyType);
@@ -4301,12 +4580,27 @@ MStatus BaseLoc::initialize()
 	aInPointArray = tAttr.create("inPointArray", "inPointArray", MFnPointArrayData::kPointArray);
 	tAttr.setStorable(true);
 	tAttr.setInternal(true);
+	tAttr.setHidden(true);
 	addAttribute(aInPointArray);
+
 
 	aInTriangleArray = tAttr.create("inTriangleArray", "inTriangleArray", MFnPointArrayData::kPointArray);
 	tAttr.setStorable(true);
 	tAttr.setInternal(true);
+	tAttr.setHidden(true);
 	addAttribute(aInTriangleArray);
+
+
+	//MFnTypedAttribute typedAttrFn;
+	//MVectorArray defaultVectArray;
+	//MFnVectorArrayData vectArrayDataFn;
+	//vectArrayDataFn.create(defaultVectArray);
+	//typedAttrFn.create("inputPoints", "inputPoints", MFnParticleSystem::kPoints, vectArrayDataFn.object(), &status);
+	//aInputPoints = typedAttrFn.object();
+	//addAttribute(aInputPoints);
+
+	aInputPoints = tAttr.create("inputPoints", "inputPoints", MFnArrayAttrsData::kDynArrayAttrs);
+	addAttribute(aInputPoints);
 
 	aBoundingBoxA = nAttr.create("boundingBoxA", "boundingBoxA", MFnNumericData::k3Float);
 	nAttr.setStorable(true);
@@ -4318,10 +4612,6 @@ MStatus BaseLoc::initialize()
 	nAttr.setInternal(true);
 	addAttribute(aBoundingBoxB);
 
-	aInput3Double = nAttr.create("input3Double", "input3Double", MFnNumericData::k3Double);
-	nAttr.setStorable(true);
-	nAttr.setInternal(false);
-	addAttribute(aInput3Double);
 
 	aTime = uAttr.create("time", "time", MFnUnitAttribute::kTime, 0.0);
 	uAttr.setWritable(true);
