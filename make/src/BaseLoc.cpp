@@ -65,9 +65,6 @@ MObject     BaseLoc::aPaintStyle;
 MObject     BaseLoc::aDrawPresets;
 MObject		BaseLoc::aDrawIconsTypes;
 MObject		BaseLoc::aTwoDIconsTypes;
-MObject		BaseLoc::aTextyType;
-
-MObject		BaseLoc::aInputDouble;
 
 MObject		BaseLoc::aTextPosition;
 MObject		BaseLoc::aTextAlignment;
@@ -77,7 +74,6 @@ MObject		BaseLoc::aTextStretch;
 MObject		BaseLoc::aTextLine;
 MObject		BaseLoc::aTextBoxSize;
 MObject		BaseLoc::aText;
-MObject		BaseLoc::aTextInputFloat;
 MObject		BaseLoc::aTextBoxColor;
 MObject		BaseLoc::aTextBoxTransparency;
 MObject		BaseLoc::aTextFontSize;
@@ -95,8 +91,11 @@ MObject		BaseLoc::aInTriangleArray;
 MObject		BaseLoc::aBoundingBoxA;
 MObject		BaseLoc::aBoundingBoxB;
 
-MObject		BaseLoc::aInput3Double;
-MObject		BaseLoc::aInputPoints;
+MObject		BaseLoc::aDebugType;
+MObject		BaseLoc::aDebugInputDouble;
+MObject		BaseLoc::aDebugInputFloat;
+MObject		BaseLoc::aDebugInput3Double;
+MObject		BaseLoc::aDebugInputPoints;
 
 MObject     BaseLoc::aTime;
 
@@ -1905,7 +1904,7 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 		fn_aTriangles.copyTo(inTriangleArray);
 
 		// Get input point array
-		p = MPlug(o_BaseLocNode, BaseLoc::aInputPoints);
+		p = MPlug(o_BaseLocNode, BaseLoc::aDebugInputPoints);
 
 		// Get particle data
 		MFnArrayAttrsData particleFn(p.asMObject(), &status);
@@ -2173,8 +2172,8 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 
 
 		// Get 2D icon draw type
-		p = MPlug(o_BaseLocNode, BaseLoc::aTextyType);
-		p.getValue(data->m_draw_textType);
+		p = MPlug(o_BaseLocNode, BaseLoc::aDebugType);
+		p.getValue(data->m_debugType);
 
 		// Get radius
 		p = MPlug(o_BaseLocNode, BaseLoc::aRadius);
@@ -2311,87 +2310,92 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 		// Get input text
 		p = MPlug(o_BaseLocNode, BaseLoc::aText);
 
-		MString tempStr = p.asString();
+	
 
 
-		// Get text types
+		// Get debug types
 
-		// Standard
-		if (data->m_draw_textType == 1)
+		if (data->m_drawPresets == 12)
 		{
-			// Get line Style
-			p = MPlug(o_BaseLocNode, BaseLoc::aInputDouble);
-			tempStr = MString() + p.asDouble();
+			MString tempStr = p.asString();
 
 
+			// Standard
+			if (data->m_debugType == 1)
+			{
+				// Get line Style
+				p = MPlug(o_BaseLocNode, BaseLoc::aDebugInputDouble);
+				tempStr = MString() + p.asDouble();
+
+
+			}
+
+			// Time
+			if (data->m_debugType == 2)
+			{
+				tempStr = MString() + data->m_currentTime.as(MTime::kFilm);
+
+
+			}
+
+
+			// 3 Double
+			if (data->m_debugType == 3)
+			{
+				p = MPlug(o_BaseLocNode, BaseLoc::aDebugInput3Double);
+				MFnNumericData numdFn_BBB(p.asMObject());
+				double v3fVal_BBB[3];
+				numdFn_BBB.getData3Double(v3fVal_BBB[0], v3fVal_BBB[1], v3fVal_BBB[2]);
+
+
+				int precision = 3;
+
+				stringstream stream_x;
+				stream_x << fixed << setprecision(precision) << v3fVal_BBB[0];
+				string x = stream_x.str();
+
+				stringstream stream_y;
+				stream_y << fixed << setprecision(precision) << v3fVal_BBB[1];
+				string y = stream_y.str();
+
+				stringstream stream_z;
+				stream_z << fixed << setprecision(precision) << v3fVal_BBB[2];
+				string z = stream_z.str();
+
+
+				tempStr = MString() + "x: " + x.c_str() + " y: " + y.c_str() + " z: " + z.c_str();
+
+				data->m_debug_double3_x = MString() + x.c_str();
+				data->m_debug_double3_y = MString() + y.c_str();
+				data->m_debug_double3_z = MString() + z.c_str();
+
+			}
+
+
+			// Angle
+			if (data->m_debugType == 4)
+			{
+				p = MPlug(o_BaseLocNode, BaseLoc::aDebugInputDouble);
+				data->m_debug_angle = p.asDouble();
+			}
+
+
+			data->m_text = tempStr;
+
+			// Get text override
+			p = MPlug(o_BaseLocNode, BaseLoc::aDebugInputFloat);
+
+			if (p.isConnected())
+			{
+
+				float textInputFloat;
+				p.getValue(textInputFloat);
+
+				data->m_text = MString(MString() + tempStr + ": " + textInputFloat);
+
+				//MGlobal::displayInfo(MString() + textInputFloat);
+			}
 		}
-
-		// Time
-		if (data->m_draw_textType == 2)
-		{
-			tempStr = MString() + data->m_currentTime.as(MTime::kFilm);
-
-
-		}
-
-
-		// 3 Double
-		if (data->m_draw_textType == 3)
-		{
-			p = MPlug(o_BaseLocNode, BaseLoc::aInput3Double);
-			MFnNumericData numdFn_BBB(p.asMObject());
-			double v3fVal_BBB[3];
-			numdFn_BBB.getData3Double(v3fVal_BBB[0], v3fVal_BBB[1], v3fVal_BBB[2]);
-
-
-			int precision = 3;
-
-			stringstream stream_x;
-			stream_x << fixed << setprecision(precision) << v3fVal_BBB[0];
-			string x = stream_x.str();
-
-			stringstream stream_y;
-			stream_y << fixed << setprecision(precision) << v3fVal_BBB[1];
-			string y = stream_y.str();
-
-			stringstream stream_z;
-			stream_z << fixed << setprecision(precision) << v3fVal_BBB[2];
-			string z = stream_z.str();
-
-
-			tempStr = MString() + "x: " + x.c_str() + " y: " + y.c_str() + " z: " + z.c_str();
-
-			data->m_text_double3_x = MString() + x.c_str();
-			data->m_text_double3_y = MString() + y.c_str();
-			data->m_text_double3_z = MString() + z.c_str();
-
-		}
-
-
-		// Angle
-		if (data->m_draw_textType == 4)
-		{
-			p = MPlug(o_BaseLocNode, BaseLoc::aInputDouble);
-			data->m_angle = p.asDouble();
-		}
-
-
-		data->m_text = tempStr;
-
-		// Get text override
-		p = MPlug(o_BaseLocNode, BaseLoc::aTextInputFloat);
-
-		if (p.isConnected())
-		{
-
-			float textInputFloat;
-			p.getValue(textInputFloat);
-
-			data->m_text = MString(MString() + tempStr + ": " + textInputFloat);
-
-			//MGlobal::displayInfo(MString() + textInputFloat);
-		}
-
 
 
 		// Get textfont size
@@ -3724,10 +3728,14 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 		}
 
 		// Draw text
-		if (pLocatorData->m_dispText)
+		if (pLocatorData->m_drawPresets == 12)
 		{
 
-			if (pLocatorData->m_draw_textType == 0)
+
+			drawManager.icon(center, "SCALE_PIVOT", 1.0);
+
+
+			if (pLocatorData->m_debugType == 0)
 			{
 
 				drawManager.setColor(lineCol);
@@ -3758,7 +3766,7 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 			}
 
 			// Frame counter
-			if (pLocatorData->m_draw_textType == 2)
+			if (pLocatorData->m_debugType == 2)
 			{
 				drawManager.setFontName("Arial");
 
@@ -3784,7 +3792,7 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 			}
 
 			// 3 Double
-			if (pLocatorData->m_draw_textType == 3)
+			if (pLocatorData->m_debugType == 3)
 			{
 
 				drawManager.setFontName("Arial");
@@ -3814,7 +3822,7 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 				drawManager.setFontSize(fontsize);
 				drawManager.text2d(MPoint(ox, oy), "x:");
 				drawManager.setFontSize(fontsize - 2);
-				drawManager.text2d(MPoint(ox + x_off, oy), pLocatorData->m_text_double3_x);
+				drawManager.text2d(MPoint(ox + x_off, oy), pLocatorData->m_debug_double3_x);
 
 
 				drawManager.setColor(MColor(1.0, 0.2, 0.2, 1.0));
@@ -3823,7 +3831,7 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 
 				drawManager.setColor(MColor(1.0, 1.0, 1.0, 1.0));
 				drawManager.setFontSize(fontsize - 2);
-				drawManager.text2d(MPoint(ox + x_off, oy + y_off), pLocatorData->m_text_double3_x);
+				drawManager.text2d(MPoint(ox + x_off, oy + y_off), pLocatorData->m_debug_double3_x);
 
 				// Y
 
@@ -3833,7 +3841,7 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 				drawManager.setFontSize(fontsize);
 				drawManager.text2d(MPoint(ox, oy), "y:");
 				drawManager.setFontSize(fontsize - 2);
-				drawManager.text2d(MPoint(ox + x_off, oy), pLocatorData->m_text_double3_y);
+				drawManager.text2d(MPoint(ox + x_off, oy), pLocatorData->m_debug_double3_y);
 
 
 				drawManager.setColor(MColor(0.2, 1.0, 0.2, 1.0));
@@ -3842,7 +3850,7 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 
 				drawManager.setColor(MColor(1.0, 1.0, 1.0, 1.0));
 				drawManager.setFontSize(fontsize - 2);
-				drawManager.text2d(MPoint(ox + x_off, oy + y_off), pLocatorData->m_text_double3_y);
+				drawManager.text2d(MPoint(ox + x_off, oy + y_off), pLocatorData->m_debug_double3_y);
 
 				// Z
 
@@ -3852,7 +3860,7 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 				drawManager.setFontSize(fontsize);
 				drawManager.text2d(MPoint(ox, oy), "z:");
 				drawManager.setFontSize(fontsize - 2);
-				drawManager.text2d(MPoint(ox + x_off, oy), pLocatorData->m_text_double3_z);
+				drawManager.text2d(MPoint(ox + x_off, oy), pLocatorData->m_debug_double3_z);
 
 
 				drawManager.setColor(MColor(0.2, 0.2, 1.0, 1.0));
@@ -3861,12 +3869,12 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 
 				drawManager.setColor(MColor(1.0, 1.0, 1.0, 1.0));
 				drawManager.setFontSize(fontsize - 2);
-				drawManager.text2d(MPoint(ox + x_off, oy + y_off), pLocatorData->m_text_double3_z);
+				drawManager.text2d(MPoint(ox + x_off, oy + y_off), pLocatorData->m_debug_double3_z);
 
 			}
 
 			// Angle
-			if (pLocatorData->m_draw_textType == 4)
+			if (pLocatorData->m_debugType == 4)
 			{
 
 				MPoint p = MPoint::origin;
@@ -3884,7 +3892,7 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 				oy = oy_orig;
 
 
-				float angle = pLocatorData->m_angle;
+				float angle = pLocatorData->m_debug_angle;
 
 				//*(M_PI / 180.0)
 
@@ -3916,7 +3924,7 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 
 				//
 
-				MString tempStr = MString() + pLocatorData->m_angle *  (180.0 / M_PI);
+				MString tempStr = MString() + pLocatorData->m_debug_angle *  (180.0 / M_PI);
 
 				drawManager.setFontSize(15);
 				drawManager.setColor(MColor(0.0, 0.0, 0.0, 1.0));
@@ -3928,40 +3936,61 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 
 			}
 
-			if (pLocatorData->m_draw_textType == 5)
+			if (pLocatorData->m_debugType == 5)
 			{
 
-				drawManager.setColor(MColor(1.0, 0.0, 0.0, 1.0));
-				drawManager.setPointSize(2);
-				drawManager.points(pLocatorData->m_inPoints, false);
 
-				drawManager.setFontSize(12);
 
-				for (auto i = 0; i < pLocatorData->m_inPoints.length(); i++)
+				if (pLocatorData->m_inPoints.length() > 0)
 				{
 
-					MString tempStr = MString() + i;
+					drawManager.setColor(MColor(1.0, 0.0, 0.0, 1.0));
+					drawManager.setPointSize(2);
+					drawManager.points(pLocatorData->m_inPoints, false);
 
-					MPoint p = pLocatorData->m_inPoints[i];
+					drawManager.setFontSize(12);
+
+					for (auto i = 0; i < pLocatorData->m_inPoints.length(); i++)
+					{
+
+						MString tempStr = MString() + i;
+
+						MPoint p = pLocatorData->m_inPoints[i];
+						double ox, oy;
+						frameContext.worldToViewport(p, ox, oy);
+
+						drawManager.setColor(MColor(1.0, 0.0, 0.0, 1.0));
+						drawManager.circle2d(MPoint(ox, oy), 2, true);
+
+						//drawManager.setColor(MColor(1.0, 0.3, 0.3, 1.0));
+						//drawManager.circle2d(MPoint(ox, oy), 4, false);
+
+						drawManager.setColor(MColor(0.0, 0.0, 0.0, 1.0));
+						drawManager.text2d(MPoint(ox, oy + 2), tempStr);
+
+						drawManager.setColor(MColor(1.0, 1.0, 1.0, 1.0));
+						drawManager.text2d(MPoint(ox, oy + 4), tempStr);
+
+
+
+					}
+				}
+
+				else 
+				{
+
+					MPoint p = MPoint::origin;
+					p *= pLocatorData->m_inLoc_mat;
+
 					double ox, oy;
 					frameContext.worldToViewport(p, ox, oy);
 
-					drawManager.setColor(MColor(1.0, 0.0, 0.0, 1.0));
-					drawManager.circle2d(MPoint(ox, oy), 2, true);
-
-					//drawManager.setColor(MColor(1.0, 0.3, 0.3, 1.0));
-					//drawManager.circle2d(MPoint(ox, oy), 4, false);
-
 					drawManager.setColor(MColor(0.0, 0.0, 0.0, 1.0));
-					drawManager.text2d(MPoint(ox, oy + 2), tempStr);
+					drawManager.text2d(MPoint(ox, oy + 8), "No points", MHWRender::MUIDrawManager::TextAlignment::kCenter);
 
 					drawManager.setColor(MColor(1.0, 1.0, 1.0, 1.0));
-					drawManager.text2d(MPoint(ox, oy + 4), tempStr);
-
-
-
+					drawManager.text2d(MPoint(ox, oy + 10), "No points", MHWRender::MUIDrawManager::TextAlignment::kCenter);
 				}
-
 
 			}
 
@@ -4046,6 +4075,7 @@ MStatus BaseLoc::initialize()
 	eAttr.addField("2D Icons", 9);
 	eAttr.addField("A-B", 10);
 	eAttr.addField("File", 11);
+	eAttr.addField("Debug", 12);
 
 	eAttr.setDefault(6);
 
@@ -4147,7 +4177,7 @@ MStatus BaseLoc::initialize()
 	addAttribute(aTwoDIconsTypes);
 
 
-	aTextyType = eAttr.create("textyType", "textyType", 0);
+	aDebugType = eAttr.create("debugType", "debugType", 0);
 	eAttr.setStorable(true);
 	eAttr.addField("String", 0);
 	eAttr.addField("Input", 1);
@@ -4155,9 +4185,9 @@ MStatus BaseLoc::initialize()
 	eAttr.addField("3 Double", 3);
 	eAttr.addField("Angle", 4);
 	eAttr.addField("Points", 5);
-	eAttr.setDefault(6);
+	eAttr.setDefault(0);
 
-	addAttribute(aTextyType);
+	addAttribute(aDebugType);
 
 	// ---------------------------------------------------------------------------------------------------
 	// Size
@@ -4199,11 +4229,11 @@ MStatus BaseLoc::initialize()
 
 	// Input
 
-	aInputDouble = nAttr.create("inputDouble", "inputDouble", MFnNumericData::kDouble);
+	aDebugInputDouble = nAttr.create("debugInputDouble", "debugInputDouble", MFnNumericData::kDouble);
 	nAttr.setStorable(false);
 	nAttr.setKeyable(false);
 	nAttr.setChannelBox(false);
-	addAttribute(aInputDouble);
+	addAttribute(aDebugInputDouble);
 
 	// Offset
 
@@ -4354,9 +4384,9 @@ MStatus BaseLoc::initialize()
 
 	// ---------------------------------------------------------------------------------------------------
 
-	aTextInputFloat = nAttr.create("textInputFloat", "textInputFloat", MFnNumericData::kFloat);
+	aDebugInputFloat = nAttr.create("debugInputFloat", "debugInputFloat", MFnNumericData::kFloat);
 	nAttr.setStorable(true);
-	addAttribute(aTextInputFloat);
+	addAttribute(aDebugInputFloat);
 
 	// ---------------------------------------------------------------------------------------------------
 	// Switches
@@ -4479,6 +4509,14 @@ MStatus BaseLoc::initialize()
 	nAttr.setDefault(0.0, 0.0, 0.0);
 	addAttribute(aTextPosition);
 
+
+	// Debug 3Double
+	aDebugInput3Double = nAttr.create("debugInput3Double", "debugInput3Double", MFnNumericData::k3Double);
+	nAttr.setDefault(0.0, 0.0, 0.0);
+	addAttribute(aDebugInput3Double);
+
+	//
+
 	// Add text attributes.
 	MFnStringData stringFn;
 	MObject defaultText = stringFn.create("Main Controller");
@@ -4596,11 +4634,11 @@ MStatus BaseLoc::initialize()
 	//MFnVectorArrayData vectArrayDataFn;
 	//vectArrayDataFn.create(defaultVectArray);
 	//typedAttrFn.create("inputPoints", "inputPoints", MFnParticleSystem::kPoints, vectArrayDataFn.object(), &status);
-	//aInputPoints = typedAttrFn.object();
-	//addAttribute(aInputPoints);
+	//aDebugInputPoints = typedAttrFn.object();
+	//addAttribute(aDebugInputPoints);
 
-	aInputPoints = tAttr.create("inputPoints", "inputPoints", MFnArrayAttrsData::kDynArrayAttrs);
-	addAttribute(aInputPoints);
+	aDebugInputPoints = tAttr.create("debugInputPoints", "debugInputPoints", MFnArrayAttrsData::kDynArrayAttrs);
+	addAttribute(aDebugInputPoints);
 
 	aBoundingBoxA = nAttr.create("boundingBoxA", "boundingBoxA", MFnNumericData::k3Float);
 	nAttr.setStorable(true);

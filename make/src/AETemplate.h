@@ -1,8 +1,8 @@
 //
 //  AETemplates.h
-//  clonerMulti
+//  baseLoc
 //
-//  Created by Janos Hunyadi on 2018.07.11
+//  Created by Janos Hunyadi on 2018.07.13
 //  Copyright (c) 2018. Janos Hunyadi. All rights reserved.
 //
 
@@ -98,6 +98,10 @@ MStringArray mel_AETemplate()
 		"\	editorTemplate -addControl \"textBoxSize\";\r\n"
 		"\	editorTemplate -addControl \"textBoxColor\";\r\n"
 		"\	editorTemplate -addControl \"textBoxTransparency\";\r\n"
+		"\	editorTemplate -endLayout;\r\n"
+		"\	\r\n"
+		"\	editorTemplate -beginLayout \"Debug presets\" -collapse 0;\r\n"
+		"\	editorTemplate -addControl \"debugType\";\r\n"
 		"\	editorTemplate -endLayout;\r\n"
 		"\r\n"
 		"\	editorTemplate -beginLayout \"Misc\" -collapse 0;\r\n"
@@ -327,6 +331,8 @@ MStringArray mel_AETemplate()
 		"\r\n"
 		"\r\n"
 		"\r\n"
+		"//\r\n"
+		"//\r\n"
 		"\r\n"
 		"\r\n"
 		"global proc AE_bl_launch_website()\r\n"

@@ -134,7 +134,7 @@ public:
 	static MObject      aDrawPresets;
 	static MObject      aDrawIconsTypes;
 	static MObject      aTwoDIconsTypes;
-	static MObject      aTextyType;
+	static MObject      aDebugType;
 
 	static MObject		aLineWidth;
 	static MObject      aPointSize;
@@ -156,13 +156,13 @@ public:
 	static MObject      aTextLine;
 	static MObject      aTextBoxSize;
 	static MObject      aText;
-	static MObject      aTextInputFloat;
+	static MObject      aDebugInputFloat;
 	static MObject      aTextBoxColor;
 	static MObject      aTextBoxTransparency;
 	static MObject      aTextFontSize;
 	static MObject      aFontFaceName;
 
-	static MObject		aInputDouble;
+	static MObject		aDebugInputDouble;
     
     static MObject		aInLocPosA;
     static MObject		aInLocPosB;
@@ -176,8 +176,8 @@ public:
 	static MObject		aBoundingBoxA;
 	static MObject		aBoundingBoxB;
 
-	static MObject		aInput3Double;
-	static MObject		aInputPoints;
+	static MObject		aDebugInput3Double;
+	static MObject		aDebugInputPoints;
 
 	static MObject		aTime;
 
@@ -249,7 +249,7 @@ public:
 
 	int						m_drawPresets;
 	int						m_drawIconType;
-	int						m_draw_textType;
+	int						m_debugType;
 	int						m_draw_twod_IconType;
 	float					m_lineWidth;
 	int						m_pointSize;
@@ -316,13 +316,11 @@ public:
 
 	// text stuff
 
-	MString					m_text_double3_x;
-	MString					m_text_double3_y;
-	MString					m_text_double3_z;
-
-	MString					m_text_float;
-
-	double					m_angle;
+	MString					m_debug_double3_x;
+	MString					m_debug_double3_y;
+	MString					m_debug_double3_z;
+	MString					m_debug_float;
+	double					m_debug_angle;
 
 	MMatrix					m_inLoc_mat;
 

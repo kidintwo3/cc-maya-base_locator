@@ -75,6 +75,10 @@ global proc AEBaseLocTemplate( string $nodeName )
 	editorTemplate -addControl "textBoxColor";
 	editorTemplate -addControl "textBoxTransparency";
 	editorTemplate -endLayout;
+	
+	editorTemplate -beginLayout "Debug presets" -collapse 0;
+	editorTemplate -addControl "debugType";
+	editorTemplate -endLayout;
 
 	editorTemplate -beginLayout "Misc" -collapse 0;
 	editorTemplate -addControl "locID";
@@ -303,6 +307,8 @@ global proc AE_remove_customProfile_BaseLoc(string $attrName)
 
 
 
+//
+//
 
 
 global proc AE_bl_launch_website()
