@@ -156,7 +156,7 @@ public:
 	static MObject      aTextLine;
 	static MObject      aTextBoxSize;
 	static MObject      aText;
-	static MObject      aDebugInputFloat;
+	//static MObject      aDebugInputFloat;
 	static MObject      aTextBoxColor;
 	static MObject      aTextBoxTransparency;
 	static MObject      aTextFontSize;
@@ -290,6 +290,7 @@ public:
 
 	MString					m_textInputFloat;
 	MString					m_text;
+	MString					m_textDebug;
 	unsigned int			m_textFontSize;
 	unsigned int			m_fontFaceIndex;
 	MPoint					m_textPosition;

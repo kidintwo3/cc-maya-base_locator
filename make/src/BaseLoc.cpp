@@ -93,7 +93,7 @@ MObject		BaseLoc::aBoundingBoxB;
 
 MObject		BaseLoc::aDebugType;
 MObject		BaseLoc::aDebugInputDouble;
-MObject		BaseLoc::aDebugInputFloat;
+//MObject		BaseLoc::aDebugInputFloat;
 MObject		BaseLoc::aDebugInput3Double;
 MObject		BaseLoc::aDebugInputPoints;
 
@@ -2309,15 +2309,14 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 
 		// Get input text
 		p = MPlug(o_BaseLocNode, BaseLoc::aText);
-
-	
+		data->m_text = MString() + p.asString();
 
 
 		// Get debug types
 
 		if (data->m_drawPresets == 12)
 		{
-			MString tempStr = p.asString();
+	
 
 
 			// Standard
@@ -2325,15 +2324,28 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 			{
 				// Get line Style
 				p = MPlug(o_BaseLocNode, BaseLoc::aDebugInputDouble);
-				tempStr = MString() + p.asDouble();
 
+				if (p.isConnected())
+				{
+					
+					data->m_textDebug = MString() + p.asDouble();
+				}
 
+				else
+				{
+					data->m_textDebug = MString(MString() + "No input");
+				}
+
+			
+
+	
 			}
 
 			// Time
 			if (data->m_debugType == 2)
 			{
-				tempStr = MString() + data->m_currentTime.as(MTime::kFilm);
+				data->m_textDebug = MString() + data->m_currentTime.as(MTime::kFilm);
+
 
 
 			}
@@ -2343,31 +2355,43 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 			if (data->m_debugType == 3)
 			{
 				p = MPlug(o_BaseLocNode, BaseLoc::aDebugInput3Double);
-				MFnNumericData numdFn_BBB(p.asMObject());
-				double v3fVal_BBB[3];
-				numdFn_BBB.getData3Double(v3fVal_BBB[0], v3fVal_BBB[1], v3fVal_BBB[2]);
+
+				if (p.isConnected())
+				{
+
+					MFnNumericData numdFn_BBB(p.asMObject());
+					double v3fVal_BBB[3];
+					numdFn_BBB.getData3Double(v3fVal_BBB[0], v3fVal_BBB[1], v3fVal_BBB[2]);
 
 
-				int precision = 3;
+					int precision = 3;
 
-				stringstream stream_x;
-				stream_x << fixed << setprecision(precision) << v3fVal_BBB[0];
-				string x = stream_x.str();
+					stringstream stream_x;
+					stream_x << fixed << setprecision(precision) << v3fVal_BBB[0];
+					string x = stream_x.str();
 
-				stringstream stream_y;
-				stream_y << fixed << setprecision(precision) << v3fVal_BBB[1];
-				string y = stream_y.str();
+					stringstream stream_y;
+					stream_y << fixed << setprecision(precision) << v3fVal_BBB[1];
+					string y = stream_y.str();
 
-				stringstream stream_z;
-				stream_z << fixed << setprecision(precision) << v3fVal_BBB[2];
-				string z = stream_z.str();
+					stringstream stream_z;
+					stream_z << fixed << setprecision(precision) << v3fVal_BBB[2];
+					string z = stream_z.str();
 
 
-				tempStr = MString() + "x: " + x.c_str() + " y: " + y.c_str() + " z: " + z.c_str();
+					//tempStr = MString() + "x: " + x.c_str() + " y: " + y.c_str() + " z: " + z.c_str();
 
-				data->m_debug_double3_x = MString() + x.c_str();
-				data->m_debug_double3_y = MString() + y.c_str();
-				data->m_debug_double3_z = MString() + z.c_str();
+					data->m_debug_double3_x = MString() + x.c_str();
+					data->m_debug_double3_y = MString() + y.c_str();
+					data->m_debug_double3_z = MString() + z.c_str();
+				}
+
+				else
+				{
+					data->m_debug_double3_x = MString() + "No";
+					data->m_debug_double3_y = MString() + "Input";
+					data->m_debug_double3_z = MString() + "Connected";
+				}
 
 			}
 
@@ -2377,24 +2401,32 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 			{
 				p = MPlug(o_BaseLocNode, BaseLoc::aDebugInputDouble);
 				data->m_debug_angle = p.asDouble();
+
+
+
 			}
 
 
-			data->m_text = tempStr;
+			////data->m_textDebug = tempStr;
 
-			// Get text override
-			p = MPlug(o_BaseLocNode, BaseLoc::aDebugInputFloat);
+			//// Get text override
+			//p = MPlug(o_BaseLocNode, BaseLoc::aDebugInputFloat);
 
-			if (p.isConnected())
-			{
+			//if (p.isConnected())
+			//{
 
-				float textInputFloat;
-				p.getValue(textInputFloat);
+			//	float textInputFloat;
+			//	p.getValue(textInputFloat);
 
-				data->m_text = MString(MString() + tempStr + ": " + textInputFloat);
+			//	data->m_textDebug = MString(MString() +  textInputFloat);
 
-				//MGlobal::displayInfo(MString() + textInputFloat);
-			}
+			//	if (!p.isConnected())
+			//	{
+			//		data->m_textDebug = MString(MString() + "No input");
+			//	}
+
+			//	//MGlobal::displayInfo(MString() + textInputFloat);
+			//}
 		}
 
 
@@ -3708,11 +3740,6 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 
 #endif
 
-
-
-
-
-
 		}
 
 		// Draw A-B line
@@ -3738,31 +3765,39 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 			if (pLocatorData->m_debugType == 0)
 			{
 
-				drawManager.setColor(lineCol);
-				drawManager.setFontSize(pLocatorData->m_textFontSize);
-				drawManager.setFontIncline(pLocatorData->m_textIncline);
-				drawManager.setFontWeight(pLocatorData->m_textWeight);
-				drawManager.setFontStretch(pLocatorData->m_textStretch);
-				drawManager.setFontLine(pLocatorData->m_textLine);
-
-				MString faceName = BaseLocData::m_fFontList[pLocatorData->m_fontFaceIndex];
-				drawManager.setFontName(faceName);
-
-				int boxSize[] = { pLocatorData->m_textBoxWidth, pLocatorData->m_textBoxHeight };
-				drawManager.text(pLocatorData->m_textPosition, pLocatorData->m_text, pLocatorData->m_textAlignment, boxSize[0] + boxSize[1] == 0 ? NULL : boxSize, &pLocatorData->m_textBoxColor, false);
 
 
+				MPoint p = MPoint::origin;
+				p *= pLocatorData->m_inLoc_mat;
 
-				if (pLocatorData->m_offsetX != 0.0)
-				{
-					if (pLocatorData->m_mirror_x || pLocatorData->m_mirror_y || pLocatorData->m_mirror_z)
-					{
-						MPoint mirrorX_point(-pLocatorData->m_textPosition.x, pLocatorData->m_textPosition.y, pLocatorData->m_textPosition.z);
+				double ox, oy;
+				frameContext.worldToViewport(p, ox, oy);
 
-						drawManager.text(mirrorX_point, pLocatorData->m_text, pLocatorData->m_textAlignment, boxSize[0] + boxSize[1] == 0 ? NULL : boxSize, &pLocatorData->m_textBoxColor, false);
-					}
+				drawManager.setColor(MColor(0.0, 0.0, 0.0, 1.0));
+				drawManager.text2d(MPoint(ox, oy + 8), pLocatorData->m_textDebug, MHWRender::MUIDrawManager::TextAlignment::kCenter);
 
-				}
+				drawManager.setColor(MColor(1.0, 1.0, 1.0, 1.0));
+				drawManager.text2d(MPoint(ox, oy + 10), pLocatorData->m_textDebug, MHWRender::MUIDrawManager::TextAlignment::kCenter);
+
+			}
+
+			if (pLocatorData->m_debugType == 1)
+			{
+
+
+
+				MPoint p = MPoint::origin;
+				p *= pLocatorData->m_inLoc_mat;
+
+				double ox, oy;
+				frameContext.worldToViewport(p, ox, oy);
+
+				drawManager.setColor(MColor(0.0, 0.0, 0.0, 1.0));
+				drawManager.text2d(MPoint(ox, oy + 8), pLocatorData->m_textDebug, MHWRender::MUIDrawManager::TextAlignment::kCenter);
+
+				drawManager.setColor(MColor(1.0, 1.0, 1.0, 1.0));
+				drawManager.text2d(MPoint(ox, oy + 10), pLocatorData->m_textDebug, MHWRender::MUIDrawManager::TextAlignment::kCenter);
+
 			}
 
 			// Frame counter
@@ -3996,6 +4031,36 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 
 		}
 
+		if (pLocatorData->m_dispText)
+		{
+
+			drawManager.setColor(lineCol);
+			drawManager.setFontSize(pLocatorData->m_textFontSize);
+			drawManager.setFontIncline(pLocatorData->m_textIncline);
+			drawManager.setFontWeight(pLocatorData->m_textWeight);
+			drawManager.setFontStretch(pLocatorData->m_textStretch);
+			drawManager.setFontLine(pLocatorData->m_textLine);
+
+			MString faceName = BaseLocData::m_fFontList[pLocatorData->m_fontFaceIndex];
+			drawManager.setFontName(faceName);
+
+			int boxSize[] = { pLocatorData->m_textBoxWidth, pLocatorData->m_textBoxHeight };
+			drawManager.text(pLocatorData->m_textPosition, pLocatorData->m_text, pLocatorData->m_textAlignment, boxSize[0] + boxSize[1] == 0 ? NULL : boxSize, &pLocatorData->m_textBoxColor, false);
+
+
+
+			if (pLocatorData->m_offsetX != 0.0)
+			{
+				if (pLocatorData->m_mirror_x || pLocatorData->m_mirror_y || pLocatorData->m_mirror_z)
+				{
+					MPoint mirrorX_point(-pLocatorData->m_textPosition.x, pLocatorData->m_textPosition.y, pLocatorData->m_textPosition.z);
+
+					drawManager.text(mirrorX_point, pLocatorData->m_text, pLocatorData->m_textAlignment, boxSize[0] + boxSize[1] == 0 ? NULL : boxSize, &pLocatorData->m_textBoxColor, false);
+				}
+
+			}
+		}
+
 
 		if (pLocatorData->m_dispNum)
 		{
@@ -4180,7 +4245,7 @@ MStatus BaseLoc::initialize()
 	aDebugType = eAttr.create("debugType", "debugType", 0);
 	eAttr.setStorable(true);
 	eAttr.addField("String", 0);
-	eAttr.addField("Input", 1);
+	eAttr.addField("Double", 1);
 	eAttr.addField("Time", 2);
 	eAttr.addField("3 Double", 3);
 	eAttr.addField("Angle", 4);
@@ -4384,9 +4449,9 @@ MStatus BaseLoc::initialize()
 
 	// ---------------------------------------------------------------------------------------------------
 
-	aDebugInputFloat = nAttr.create("debugInputFloat", "debugInputFloat", MFnNumericData::kFloat);
-	nAttr.setStorable(true);
-	addAttribute(aDebugInputFloat);
+	//aDebugInputFloat = nAttr.create("debugInputFloat", "debugInputFloat", MFnNumericData::kFloat);
+	//nAttr.setStorable(true);
+	//addAttribute(aDebugInputFloat);
 
 	// ---------------------------------------------------------------------------------------------------
 	// Switches
