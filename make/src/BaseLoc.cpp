@@ -2316,7 +2316,7 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 
 		if (data->m_drawPresets == 12)
 		{
-	
+
 
 
 			// Standard
@@ -2327,7 +2327,7 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 
 				if (p.isConnected())
 				{
-					
+
 					data->m_textDebug = MString() + p.asDouble();
 				}
 
@@ -2336,9 +2336,9 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 					data->m_textDebug = MString(MString() + "No input");
 				}
 
-			
 
-	
+
+
 			}
 
 			// Time
@@ -3060,7 +3060,7 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 	if (!pLocatorData->m_drawOnTop)
 	{
 		drawManager.beginDrawable();
-}
+	}
 
 #else
 	drawManager.beginDrawable();
@@ -3765,19 +3765,119 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 			if (pLocatorData->m_debugType == 0)
 			{
 
-
+				pLocatorData->m_textDebug = "yolooo";
 
 				MPoint p = MPoint::origin;
 				p *= pLocatorData->m_inLoc_mat;
 
+				
+				double width = (pLocatorData->m_text.length() * 5);
+				double height = pLocatorData->m_textBoxHeight;
+
 				double ox, oy;
+
 				frameContext.worldToViewport(p, ox, oy);
 
+				double oy_off = oy + height + 40.0;
+				double oy_off_text = oy + (height*0.5) + 40.0;
+
+				float annotation_triangles[][4] = {
+					{ width + ox,-height-3.0 + oy_off, 0.0f, 1.0f },
+					{ width + 3.0f + ox,-height + oy_off, 0.0f, 1.0f },
+					{ width + 2.0f + ox,-height-2.0 + oy_off, 0.0f, 1.0f },
+					{ width + ox,height+3.0 + oy_off, 0.0f, 1.0f },
+					{ width + 2.0f + ox,height+2.0 + oy_off, 0.0f, 1.0f },
+					{ width + 3.0f + ox,height + oy_off, 0.0f, 1.0f },
+					{ -width + ox,-height-3.0 + oy_off, 0.0f, 1.0f },
+					{ -width - 2.0f + ox,-height-2.0 + oy_off, 0.0f, 1.0f },
+					{ -width - 3.0f + ox,-height + oy_off, 0.0f, 1.0f },
+					{ -width + ox,height+3.0 + oy_off, 0.0f, 1.0f },
+					{ -width - 3.0f + ox,height + oy_off, 0.0f, 1.0f },
+					{ -width - 2.0f + ox,height+2.0 + oy_off, 0.0f, 1.0f },
+					{ -0.0f + ox,-height-3.0 + oy_off, 0.0f, 1.0f },
+					{ -12.0f + ox,-height-3.0 + oy_off, 0.0f, 1.0f },
+					{ 0.0f + ox,height+3.0 + oy_off, 0.0f, 1.0f },
+					{ 0.0f + ox,height+3.0 + oy_off, 0.0f, 1.0f },
+					{ -12.0f + ox,-height-3.0 + oy_off, 0.0f, 1.0f },
+					{ -width - 3.0f + ox,0.0f + oy_off, 0.0f, 1.0f },
+					{ width + ox,-height-3.0 + oy_off, 0.0f, 1.0f },
+					{ 12.0f + ox,-height-3.0 + oy_off, 0.0f, 1.0f },
+					{ width + 3.0f + ox,-height + oy_off, 0.0f, 1.0f },
+					{ 12.0f + ox,-height-3.0 + oy_off, 0.0f, 1.0f },
+					{ width + 3.0f + ox,-0.0f + oy_off, 0.0f, 1.0f },
+					{ width + 3.0f + ox,-height + oy_off, 0.0f, 1.0f },
+					{ width + 3.0f + ox,height + oy_off, 0.0f, 1.0f },
+					{ 0.0f + ox,height+3.0 + oy_off, 0.0f, 1.0f },
+					{ width + ox,height+3.0 + oy_off, 0.0f, 1.0f },
+					{ 0.0f + ox,height+3.0 + oy_off, 0.0f, 1.0f },
+					{ width + 3.0f + ox,height + oy_off, 0.0f, 1.0f },
+					{ width + 3.0f + ox,-0.0f + oy_off, 0.0f, 1.0f },
+					{ -width - 3.0f + ox,-height + oy_off, 0.0f, 1.0f },
+					{ -12.0f + ox,-height-3.0 + oy_off, 0.0f, 1.0f },
+					{ -width + ox,-height-3.0 + oy_off, 0.0f, 1.0f },
+					{ -12.0f + ox,-height-3.0 + oy_off, 0.0f, 1.0f },
+					{ -width - 3.0f + ox,-height + oy_off, 0.0f, 1.0f },
+					{ -width - 3.0f + ox,0.0f + oy_off, 0.0f, 1.0f },
+					{ -width + ox,height+3.0 + oy_off, 0.0f, 1.0f },
+					{ 0.0f + ox,height+3.0 + oy_off, 0.0f, 1.0f },
+					{ -width - 3.0f + ox,height + oy_off, 0.0f, 1.0f },
+					{ 0.0f + ox,height+3.0 + oy_off, 0.0f, 1.0f },
+					{ -width - 3.0f + ox,0.0f + oy_off, 0.0f, 1.0f },
+					{ -width - 3.0f + ox,height + oy_off, 0.0f, 1.0f },
+					{ -0.0f + ox,(-height-30.0) + oy_off, 0.0f, 1.0f },
+					{ -0.0f + ox,-height-3.0 + oy_off, 0.0f, 1.0f },
+					{ 12.0f + ox,-height-3.0 + oy_off, 0.0f, 1.0f },
+					{ width + 3.0f + ox,-0.0f + oy_off, 0.0f, 1.0f },
+					{ 12.0f + ox,-height-3.0 + oy_off, 0.0f, 1.0f },
+					{ 0.0f + ox,height+3.0 + oy_off, 0.0f, 1.0f },
+					{ 0.0f + ox,height+3.0 + oy_off, 0.0f, 1.0f },
+					{ 12.0f + ox,-height-3.0 + oy_off, 0.0f, 1.0f },
+					{ -0.0f + ox,-height-3.0 + oy_off, 0.0f, 1.0f },
+					{ -12.0f + ox,-height-3.0 + oy_off, 0.0f, 1.0f },
+					{ -0.0f + ox,-height-3.0 + oy_off, 0.0f, 1.0f },
+					{ -0.0f + ox,(-height-30.0) + oy_off, 0.0f, 1.0f } };
+
+				float annotation_lines[][4] = {
+					{ width + ox,-height-3.0 + oy_off },
+					{ width + 2.0f + ox,-height-2.0 + oy_off },
+					{ width + 3.0f + ox,-height + oy_off },
+					{ width + 3.0f + ox,-0.0f + oy_off },
+					{ width + 3.0f + ox,height + oy_off },
+					{ width + 2.0f + ox,height+2.0 + oy_off },
+					{ width + ox,height+3.0 + oy_off },
+					{ 0.0f + ox,height+3.0 + oy_off },
+					{ -width + ox,height+3.0 + oy_off },
+					{ -width - 2.0f + ox,height+2.0 + oy_off },
+					{ -width - 3.0f + ox,height + oy_off },
+					{ -width - 3.0f + ox,0.0f + oy_off },
+					{ -width - 3.0f + ox,-height + oy_off },
+					{ -width - 2.0f + ox,-height-2.0 + oy_off },
+					{ -width + ox,-height-3.0 + oy_off },
+					{ -12.0f + ox,-height-3.0 + oy_off },
+					{ -0.0f + ox,(-height-30.0) + oy_off },
+					{ 12.0f + ox,-height-3.0 + oy_off },
+					{ width + ox,-height-3.0 + oy_off } };
+
+				MPointArray m_annotation_triangles(annotation_triangles, 54);
+				MPointArray m_annotation_lines(annotation_lines, 19);
+
+
+				drawManager.setColor(MColor(0.0, 0.0, 0.0, 0.8));
+				drawManager.mesh2d(MHWRender::MUIDrawManager::kTriangles, m_annotation_triangles);
+				drawManager.setColor(MColor(1.0, 1.0, 1.0, 1.0));
+				drawManager.lineStrip( m_annotation_lines, true);
+
 				drawManager.setColor(MColor(0.0, 0.0, 0.0, 1.0));
-				drawManager.text2d(MPoint(ox, oy + 8), pLocatorData->m_textDebug, MHWRender::MUIDrawManager::TextAlignment::kCenter);
+				drawManager.setFontSize(11);
+				drawManager.text2d(MPoint(ox, oy_off_text), pLocatorData->m_text, MHWRender::MUIDrawManager::TextAlignment::kCenter);
+
 
 				drawManager.setColor(MColor(1.0, 1.0, 1.0, 1.0));
-				drawManager.text2d(MPoint(ox, oy + 10), pLocatorData->m_textDebug, MHWRender::MUIDrawManager::TextAlignment::kCenter);
+				drawManager.setFontSize(11);
+				drawManager.text2d(MPoint(ox, (oy_off_text + 2)), pLocatorData->m_text, MHWRender::MUIDrawManager::TextAlignment::kCenter);
+
+
+
 
 			}
 
@@ -4011,7 +4111,7 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 					}
 				}
 
-				else 
+				else
 				{
 
 					MPoint p = MPoint::origin;
