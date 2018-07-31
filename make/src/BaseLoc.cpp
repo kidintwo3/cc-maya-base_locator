@@ -1169,6 +1169,7 @@ bool BaseLoc::isBounded() const
 	return true;
 }
 
+
 MBoundingBox BaseLoc::boundingBox() const
 {
 
@@ -1453,6 +1454,13 @@ MHWRender::DrawAPI BaseLocOverride::supportedDrawAPIs() const
 
 bool BaseLocOverride::isBounded(const MDagPath& /*objPath*/, const MDagPath& /*cameraPath*/) const
 {
+	return true;
+}
+
+
+bool BaseLocOverride::drawLast() const
+{
+
 	return true;
 }
 
@@ -3052,9 +3060,11 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 	int apiVer = MGlobal::apiVersion();
 
 
-#if MAYA_API_VERSION < 201600
+
+#if MAYA_API_VERSION > 201600
 	if (pLocatorData->m_drawOnTop)
 	{
+		drawManager.beginDrawable();
 		drawManager.beginDrawInXray();
 	}
 	if (!pLocatorData->m_drawOnTop)
@@ -3131,7 +3141,7 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 		// IK // 
 		// FK //
 
-		drawManager.setDepthPriority(5);
+		drawManager.setDepthPriority(7);
 
 
 		// Offset
@@ -4190,10 +4200,12 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 
 	}
 
-#if MAYA_API_VERSION < 201600
+#if MAYA_API_VERSION > 201600
 	if (pLocatorData->m_drawOnTop)
 	{
+		
 		drawManager.endDrawInXray();
+		drawManager.endDrawable();
 	}
 	if (!pLocatorData->m_drawOnTop)
 	{

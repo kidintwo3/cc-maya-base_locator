@@ -347,6 +347,7 @@ public:
 	virtual MHWRender::DrawAPI supportedDrawAPIs() const;
 
 	virtual bool isBounded( const MDagPath& objPath, const MDagPath& cameraPath) const;
+	virtual bool            drawLast() const;
 	virtual MBoundingBox boundingBox( const MDagPath& objPath, const MDagPath& cameraPath) const;
 
 	virtual MUserData* prepareForDraw( const MDagPath& objPath, const MDagPath& cameraPath, const MHWRender::MFrameContext& frameContext, MUserData* oldData);
