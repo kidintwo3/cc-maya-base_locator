@@ -97,6 +97,8 @@ MObject		BaseLoc::aDebugInputDouble;
 MObject		BaseLoc::aDebugInput3Double;
 MObject		BaseLoc::aDebugInputPoints;
 
+MObject		BaseLoc::aDebugPointsNumberDisplay;
+
 MObject     BaseLoc::aTime;
 
 MString		BaseLoc::drawDbClassification("drawdb/geometry/BaseLoc");
@@ -734,14 +736,14 @@ void BaseLoc::draw(M3dView & view, const MDagPath & /*path*/, M3dView::DisplaySt
 				double lat0 = M_PI * (-0.5 + (double)(i - 1) / lats);
 				double z0 = sin(lat0);
 				double zr0 = cos(lat0);
-				z0 *= r*0.5;
-				zr0 *= r*0.5;
+				z0 *= r * 0.5;
+				zr0 *= r * 0.5;
 
 				double lat1 = M_PI * (-0.5 + (double)i / lats);
 				double z1 = sin(lat1);
 				double zr1 = cos(lat1);
-				z1 *= r*0.5;
-				zr1 *= r*0.5;
+				z1 *= r * 0.5;
+				zr1 *= r * 0.5;
 
 				glBegin(GL_QUAD_STRIP);
 				for (int j = 0; j <= longs; j++)
@@ -1284,6 +1286,13 @@ MBoundingBox BaseLoc::boundingBox() const
 	int drawPresets;
 	p.getValue(drawPresets);
 
+
+	// Get debug type
+	p = MPlug(thisNode, BaseLoc::aDebugType);
+	int debugType;
+	p.getValue(debugType);
+
+
 	MEulerRotation rotOffEuler(rotateX  * (M_PI / 180.0), rotateY  * (M_PI / 180.0), rotateZ * (M_PI / 180.0), MEulerRotation::kXYZ);
 	MTransformationMatrix rotOffTMatrix;
 
@@ -1298,8 +1307,8 @@ MBoundingBox BaseLoc::boundingBox() const
 	MVector offV(offsetX, offsetY, offsetZ);
 	offV += MVector(localPosX, localPosY, localPosZ);
 
-	corner1 = corner1 *multiplier*rM + offV;
-	corner2 = corner2 *multiplier*rM + offV;
+	corner1 = corner1 * multiplier*rM + offV;
+	corner2 = corner2 * multiplier*rM + offV;
 
 
 	// Box, Sphere, Gyroscope, Cone
@@ -1333,7 +1342,7 @@ MBoundingBox BaseLoc::boundingBox() const
 	if (drawPresets == 5)
 	{
 
-		corner1 = MPoint(-multiplier*0.5, 0.0, 0.0);
+		corner1 = MPoint(-multiplier * 0.5, 0.0, 0.0);
 		//corner2 = MPoint( (multiplier*0.5), 1.0 +  (multiplier*0.5) , 0.0 );
 		corner2 = MPoint((multiplier*0.5) + offsetX, (multiplier*0.5) + offsetY, offsetZ);
 
@@ -1367,8 +1376,8 @@ MBoundingBox BaseLoc::boundingBox() const
 
 
 
-		corner1 = corner1 *multiplier;
-		corner2 = corner2 *multiplier;
+		corner1 = corner1 * multiplier;
+		corner2 = corner2 * multiplier;
 
 		corner1 *= rM;
 		corner2 *= rM;
@@ -1401,8 +1410,8 @@ MBoundingBox BaseLoc::boundingBox() const
 		corner1 = MPoint(v3fVal_BBA[0], v3fVal_BBA[1], v3fVal_BBA[2]);
 		corner2 = MPoint(v3fVal_BBB[0], v3fVal_BBB[1], v3fVal_BBB[2]);
 
-		corner1 = corner1 *multiplier;
-		corner2 = corner2 *multiplier;
+		corner1 = corner1 * multiplier;
+		corner2 = corner2 * multiplier;
 
 		corner1 *= rM;
 		corner2 *= rM;
@@ -1419,6 +1428,73 @@ MBoundingBox BaseLoc::boundingBox() const
 
 
 
+
+	if (drawPresets == 12)
+	{
+
+
+		// Points
+		if (debugType == 5)
+		{
+
+			// Get input point array
+			p = MPlug(thisNode, BaseLoc::aDebugInputPoints);
+
+			if (p.isConnected())
+			{
+
+				// Get particle data
+				MFnArrayAttrsData particleFn(p.asMObject());
+
+
+				MStatus status;
+				MFnArrayAttrsData::Type arrayType;
+				MVectorArray instancePosition;	// list of all instance positions
+
+
+				bool exists = false;
+
+				if (particleFn.checkArrayExist("position", arrayType, &status))
+				{
+
+					if (arrayType == MFnArrayAttrsData::kVectorArray)
+					{
+						instancePosition = particleFn.vectorArray("position", &status);
+						exists = true;
+
+					}
+
+				}
+
+
+
+
+
+				if (exists)
+				{
+
+					MBoundingBox ppBB;
+
+					for (auto i = 0; i < instancePosition.length(); i++)
+					{
+
+
+						ppBB.expand(instancePosition[i]);
+
+					}
+
+
+					ppBB.transformUsing(rM);
+
+					corner1 = ppBB.min();
+					corner2 = ppBB.max();
+
+				}
+
+			}
+		}
+
+	}
 
 
 
@@ -1602,6 +1678,12 @@ MBoundingBox BaseLocOverride::boundingBox(const MDagPath& objPath, const MDagPat
 	p.getValue(mirror_worldspace);
 
 
+	// Get debug type
+	p = MPlug(o_BaseLocNode, BaseLoc::aDebugType);
+	int debugType;
+	p.getValue(debugType);
+
+
 	// Get draw preset
 	p = MPlug(o_BaseLocNode, BaseLoc::aDrawPresets);
 	int drawPresets;
@@ -1688,7 +1770,7 @@ MBoundingBox BaseLocOverride::boundingBox(const MDagPath& objPath, const MDagPat
 	if (drawPresets == 5)
 	{
 
-		corner1 = MPoint((-multiplier*(0.5* scaleX)), 0.0, 0.0);
+		corner1 = MPoint((-multiplier * (0.5* scaleX)), 0.0, 0.0);
 		corner2 = MPoint((multiplier*(0.5* scaleX)) + offsetX, (multiplier*(0.5* scaleY)) + offsetY, offsetZ* scaleZ);
 
 		corner1 *= rM;
@@ -1720,8 +1802,8 @@ MBoundingBox BaseLocOverride::boundingBox(const MDagPath& objPath, const MDagPat
 
 
 
-		corner1 = corner1 *multiplier;
-		corner2 = corner2 *multiplier;
+		corner1 = corner1 * multiplier;
+		corner2 = corner2 * multiplier;
 
 		corner1 *= rM;
 		corner2 *= rM;
@@ -1754,8 +1836,8 @@ MBoundingBox BaseLocOverride::boundingBox(const MDagPath& objPath, const MDagPat
 		corner1 = MPoint(v3fVal_BBA[0] * scaleX, v3fVal_BBA[1] * scaleY, v3fVal_BBA[2] * scaleZ);
 		corner2 = MPoint(v3fVal_BBB[0] * scaleX, v3fVal_BBB[1] * scaleY, v3fVal_BBB[2] * scaleZ);
 
-		corner1 = corner1 *multiplier;
-		corner2 = corner2 *multiplier;
+		corner1 = corner1 * multiplier;
+		corner2 = corner2 * multiplier;
 
 		corner1 *= rM;
 		corner2 *= rM;
@@ -1767,6 +1849,73 @@ MBoundingBox BaseLocOverride::boundingBox(const MDagPath& objPath, const MDagPat
 		corner1 += offV;
 		corner2 += offV;
 
+
+	}
+
+	if (drawPresets == 12)
+	{
+
+
+		// Points
+		if (debugType == 5)
+		{
+
+			// Get input point array
+			p = MPlug(o_BaseLocNode, BaseLoc::aDebugInputPoints);
+
+			if (p.isConnected())
+			{
+
+				// Get particle data
+				MFnArrayAttrsData particleFn(p.asMObject(), &status);
+
+
+				MStatus status;
+				MFnArrayAttrsData::Type arrayType;
+				MVectorArray instancePosition;	// list of all instance positions
+
+
+				bool exists = false;
+
+				if (particleFn.checkArrayExist("position", arrayType, &status))
+				{
+
+					if (arrayType == MFnArrayAttrsData::kVectorArray)
+					{
+						instancePosition = particleFn.vectorArray("position", &status);
+						exists = true;
+
+					}
+
+				}
+
+			
+
+
+
+				if (exists)
+				{
+
+					MBoundingBox ppBB;
+
+					for (auto i = 0; i < instancePosition.length(); i++)
+					{
+
+
+						ppBB.expand(instancePosition[i]);
+
+					}
+
+
+					ppBB.transformUsing(rM);
+
+					corner1 = ppBB.min();
+					corner2 = ppBB.max();
+
+				}
+
+			}
+		}
 
 	}
 
@@ -1839,8 +1988,8 @@ MStatus BaseLocOverride::getVectorArray(MFnArrayAttrsData &particleFn, const MSt
 }
 
 /*************************************************************************************/
-// function to extract double array information from an arrayAttr
-MStatus BaseLocOverride::getDoubleArray(MFnArrayAttrsData &particleFn, const MString doubleName, MDoubleArray &doubleArray, bool &exists)
+// function to extract int array information from an arrayAttr
+MStatus BaseLocOverride::getIntArray(MFnArrayAttrsData &particleFn, const MString intName, MIntArray &intArray, bool &exists)
 {
 	MStatus status;
 	MFnArrayAttrsData::Type arrayType;
@@ -1848,11 +1997,11 @@ MStatus BaseLocOverride::getDoubleArray(MFnArrayAttrsData &particleFn, const MSt
 
 	exists = false;
 
-	if (particleFn.checkArrayExist(doubleName, arrayType, &status))
+	if (particleFn.checkArrayExist(intName, arrayType, &status))
 	{
-		if (arrayType == MFnArrayAttrsData::kDoubleArray)
+		if (arrayType == MFnArrayAttrsData::kIntArray)
 		{
-			doubleArray = particleFn.doubleArray(doubleName, &status);
+			intArray = particleFn.intArray(intName, &status);
 			exists = true;
 
 		}
@@ -1914,47 +2063,69 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 		// Get input point array
 		p = MPlug(o_BaseLocNode, BaseLoc::aDebugInputPoints);
 
-		// Get particle data
-		MFnArrayAttrsData particleFn(p.asMObject(), &status);
-
-		MIntArray mapObjectIdToDisplayList;
-
-		MVectorArray instancePosition;	// list of all instance positions
-		MVectorArray instanceRotation;    // rotations
-		MVectorArray instanceScale; 	// scale
-		MDoubleArray instanceVisibility;
-		MIntArray 	 instanceDisplayList;
-		MVectorArray instanceColor;
-
 		data->m_inPoints.clear();
 		data->m_inPointIDs.clear();
 		data->m_inPointRotations.clear();
 
-		bool positionExists, objectIdExists, rotationExists;
-
-
-		//
-
-		// the position array is our reference, it is mandatory
-		status = getVectorArray(particleFn, "position", instancePosition, positionExists);
-
-		if (positionExists)
+		if (p.isConnected())
 		{
-			for (auto i = 0; i < instancePosition.length(); i++)
+
+
+			// Get particle data
+			MFnArrayAttrsData particleFn(p.asMObject(), &status);
+
+			MIntArray mapObjectIdToDisplayList;
+
+			MVectorArray instancePosition;	// list of all instance positions
+			MVectorArray instanceRotation;    // rotations
+			MVectorArray instanceScale; 	// scale
+			MDoubleArray instanceVisibility;
+			MIntArray 	 instanceDisplayList;
+			MVectorArray instanceColor;
+			MIntArray objectId;
+
+
+
+			bool positionExists, objectIdExists, rotationExists;
+
+
+			//
+
+			// the position array is our reference, it is mandatory
+			status = getVectorArray(particleFn, "position", instancePosition, positionExists);
+
+			if (positionExists)
 			{
-				data->m_inPoints.append(instancePosition[i]);
+				for (auto i = 0; i < instancePosition.length(); i++)
+				{
+					data->m_inPoints.append(instancePosition[i]);
+				}
+
 			}
 
+
+			//status = getVectorArray(particleFn, "rotation", instanceRotation, rotationExists);
+			//if (rotationExists)
+			//{
+
+			//	data->m_inPointRotations = instanceRotation;
+
+			//}
+
+
+
+			//status = getIntArray(particleFn, "objectIndex", objectId, objectIdExists);
+
+			//if (objectIdExists)
+			//{
+
+			//	data->m_inPointIDs = objectId;
+
+			//}
+
+
 		}
 
-
-		status = getVectorArray(particleFn, "rotationPP", instanceRotation, rotationExists);
-		if (rotationExists)
-		{
-
-			data->m_inPointRotations = instanceRotation;
-
-		}
 
 
 		//MGlobal::displayInfo(MString() + instanceRotation.length() + ", " + instancePosition.length());
@@ -2179,9 +2350,15 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 		p.getValue(data->m_draw_twod_IconType);
 
 
-		// Get 2D icon draw type
+		// Get debug type
 		p = MPlug(o_BaseLocNode, BaseLoc::aDebugType);
 		p.getValue(data->m_debugType);
+
+
+		// Get debug points number display
+		p = MPlug(o_BaseLocNode, BaseLoc::aDebugPointsNumberDisplay);
+		p.getValue(data->m_debugPointsNumberDisplay);
+
 
 		// Get radius
 		p = MPlug(o_BaseLocNode, BaseLoc::aRadius);
@@ -2785,14 +2962,14 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 			double lat0 = M_PI * (-0.5 + (double)(i - 1) / lats);
 			double z0 = sin(lat0);
 			double zr0 = cos(lat0);
-			z0 *= r*0.5;
-			zr0 *= r*0.5;
+			z0 *= r * 0.5;
+			zr0 *= r * 0.5;
 
 			double lat1 = M_PI * (-0.5 + (double)i / lats);
 			double z1 = sin(lat1);
 			double zr1 = cos(lat1);
-			z1 *= r*0.5;
-			zr1 *= r*0.5;
+			z1 *= r * 0.5;
+			zr1 *= r * 0.5;
 
 			for (int j = 0; j <= longs; j++)
 			{
@@ -3769,18 +3946,19 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 		{
 
 
-			drawManager.icon(center, "SCALE_PIVOT", 1.0);
+			
 
 
 			if (pLocatorData->m_debugType == 0)
 			{
+				drawManager.icon(center, "SCALE_PIVOT", 1.0);
 
 				pLocatorData->m_textDebug = "yolooo";
 
 				MPoint p = MPoint::origin;
 				p *= pLocatorData->m_inLoc_mat;
 
-				
+
 				double width = (pLocatorData->m_text.length() * 5);
 				double height = pLocatorData->m_textBoxHeight;
 
@@ -3792,81 +3970,81 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 				double oy_off_text = oy + (height*0.5) + 40.0;
 
 				float annotation_triangles[][4] = {
-					{ width + ox,-height-3.0 + oy_off, 0.0f, 1.0f },
+					{ width + ox,-height - 3.0 + oy_off, 0.0f, 1.0f },
 					{ width + 3.0f + ox,-height + oy_off, 0.0f, 1.0f },
-					{ width + 2.0f + ox,-height-2.0 + oy_off, 0.0f, 1.0f },
-					{ width + ox,height+3.0 + oy_off, 0.0f, 1.0f },
-					{ width + 2.0f + ox,height+2.0 + oy_off, 0.0f, 1.0f },
+					{ width + 2.0f + ox,-height - 2.0 + oy_off, 0.0f, 1.0f },
+					{ width + ox,height + 3.0 + oy_off, 0.0f, 1.0f },
+					{ width + 2.0f + ox,height + 2.0 + oy_off, 0.0f, 1.0f },
 					{ width + 3.0f + ox,height + oy_off, 0.0f, 1.0f },
-					{ -width + ox,-height-3.0 + oy_off, 0.0f, 1.0f },
-					{ -width - 2.0f + ox,-height-2.0 + oy_off, 0.0f, 1.0f },
+					{ -width + ox,-height - 3.0 + oy_off, 0.0f, 1.0f },
+					{ -width - 2.0f + ox,-height - 2.0 + oy_off, 0.0f, 1.0f },
 					{ -width - 3.0f + ox,-height + oy_off, 0.0f, 1.0f },
-					{ -width + ox,height+3.0 + oy_off, 0.0f, 1.0f },
+					{ -width + ox,height + 3.0 + oy_off, 0.0f, 1.0f },
 					{ -width - 3.0f + ox,height + oy_off, 0.0f, 1.0f },
-					{ -width - 2.0f + ox,height+2.0 + oy_off, 0.0f, 1.0f },
-					{ -0.0f + ox,-height-3.0 + oy_off, 0.0f, 1.0f },
-					{ -12.0f + ox,-height-3.0 + oy_off, 0.0f, 1.0f },
-					{ 0.0f + ox,height+3.0 + oy_off, 0.0f, 1.0f },
-					{ 0.0f + ox,height+3.0 + oy_off, 0.0f, 1.0f },
-					{ -12.0f + ox,-height-3.0 + oy_off, 0.0f, 1.0f },
+					{ -width - 2.0f + ox,height + 2.0 + oy_off, 0.0f, 1.0f },
+					{ -0.0f + ox,-height - 3.0 + oy_off, 0.0f, 1.0f },
+					{ -12.0f + ox,-height - 3.0 + oy_off, 0.0f, 1.0f },
+					{ 0.0f + ox,height + 3.0 + oy_off, 0.0f, 1.0f },
+					{ 0.0f + ox,height + 3.0 + oy_off, 0.0f, 1.0f },
+					{ -12.0f + ox,-height - 3.0 + oy_off, 0.0f, 1.0f },
 					{ -width - 3.0f + ox,0.0f + oy_off, 0.0f, 1.0f },
-					{ width + ox,-height-3.0 + oy_off, 0.0f, 1.0f },
-					{ 12.0f + ox,-height-3.0 + oy_off, 0.0f, 1.0f },
+					{ width + ox,-height - 3.0 + oy_off, 0.0f, 1.0f },
+					{ 12.0f + ox,-height - 3.0 + oy_off, 0.0f, 1.0f },
 					{ width + 3.0f + ox,-height + oy_off, 0.0f, 1.0f },
-					{ 12.0f + ox,-height-3.0 + oy_off, 0.0f, 1.0f },
+					{ 12.0f + ox,-height - 3.0 + oy_off, 0.0f, 1.0f },
 					{ width + 3.0f + ox,-0.0f + oy_off, 0.0f, 1.0f },
 					{ width + 3.0f + ox,-height + oy_off, 0.0f, 1.0f },
 					{ width + 3.0f + ox,height + oy_off, 0.0f, 1.0f },
-					{ 0.0f + ox,height+3.0 + oy_off, 0.0f, 1.0f },
-					{ width + ox,height+3.0 + oy_off, 0.0f, 1.0f },
-					{ 0.0f + ox,height+3.0 + oy_off, 0.0f, 1.0f },
+					{ 0.0f + ox,height + 3.0 + oy_off, 0.0f, 1.0f },
+					{ width + ox,height + 3.0 + oy_off, 0.0f, 1.0f },
+					{ 0.0f + ox,height + 3.0 + oy_off, 0.0f, 1.0f },
 					{ width + 3.0f + ox,height + oy_off, 0.0f, 1.0f },
 					{ width + 3.0f + ox,-0.0f + oy_off, 0.0f, 1.0f },
 					{ -width - 3.0f + ox,-height + oy_off, 0.0f, 1.0f },
-					{ -12.0f + ox,-height-3.0 + oy_off, 0.0f, 1.0f },
-					{ -width + ox,-height-3.0 + oy_off, 0.0f, 1.0f },
-					{ -12.0f + ox,-height-3.0 + oy_off, 0.0f, 1.0f },
+					{ -12.0f + ox,-height - 3.0 + oy_off, 0.0f, 1.0f },
+					{ -width + ox,-height - 3.0 + oy_off, 0.0f, 1.0f },
+					{ -12.0f + ox,-height - 3.0 + oy_off, 0.0f, 1.0f },
 					{ -width - 3.0f + ox,-height + oy_off, 0.0f, 1.0f },
 					{ -width - 3.0f + ox,0.0f + oy_off, 0.0f, 1.0f },
-					{ -width + ox,height+3.0 + oy_off, 0.0f, 1.0f },
-					{ 0.0f + ox,height+3.0 + oy_off, 0.0f, 1.0f },
+					{ -width + ox,height + 3.0 + oy_off, 0.0f, 1.0f },
+					{ 0.0f + ox,height + 3.0 + oy_off, 0.0f, 1.0f },
 					{ -width - 3.0f + ox,height + oy_off, 0.0f, 1.0f },
-					{ 0.0f + ox,height+3.0 + oy_off, 0.0f, 1.0f },
+					{ 0.0f + ox,height + 3.0 + oy_off, 0.0f, 1.0f },
 					{ -width - 3.0f + ox,0.0f + oy_off, 0.0f, 1.0f },
 					{ -width - 3.0f + ox,height + oy_off, 0.0f, 1.0f },
-					{ -0.0f + ox,(-height-30.0) + oy_off, 0.0f, 1.0f },
-					{ -0.0f + ox,-height-3.0 + oy_off, 0.0f, 1.0f },
-					{ 12.0f + ox,-height-3.0 + oy_off, 0.0f, 1.0f },
+					{ -0.0f + ox,(-height - 30.0) + oy_off, 0.0f, 1.0f },
+					{ -0.0f + ox,-height - 3.0 + oy_off, 0.0f, 1.0f },
+					{ 12.0f + ox,-height - 3.0 + oy_off, 0.0f, 1.0f },
 					{ width + 3.0f + ox,-0.0f + oy_off, 0.0f, 1.0f },
-					{ 12.0f + ox,-height-3.0 + oy_off, 0.0f, 1.0f },
-					{ 0.0f + ox,height+3.0 + oy_off, 0.0f, 1.0f },
-					{ 0.0f + ox,height+3.0 + oy_off, 0.0f, 1.0f },
-					{ 12.0f + ox,-height-3.0 + oy_off, 0.0f, 1.0f },
-					{ -0.0f + ox,-height-3.0 + oy_off, 0.0f, 1.0f },
-					{ -12.0f + ox,-height-3.0 + oy_off, 0.0f, 1.0f },
-					{ -0.0f + ox,-height-3.0 + oy_off, 0.0f, 1.0f },
-					{ -0.0f + ox,(-height-30.0) + oy_off, 0.0f, 1.0f } };
+					{ 12.0f + ox,-height - 3.0 + oy_off, 0.0f, 1.0f },
+					{ 0.0f + ox,height + 3.0 + oy_off, 0.0f, 1.0f },
+					{ 0.0f + ox,height + 3.0 + oy_off, 0.0f, 1.0f },
+					{ 12.0f + ox,-height - 3.0 + oy_off, 0.0f, 1.0f },
+					{ -0.0f + ox,-height - 3.0 + oy_off, 0.0f, 1.0f },
+					{ -12.0f + ox,-height - 3.0 + oy_off, 0.0f, 1.0f },
+					{ -0.0f + ox,-height - 3.0 + oy_off, 0.0f, 1.0f },
+					{ -0.0f + ox,(-height - 30.0) + oy_off, 0.0f, 1.0f } };
 
 				float annotation_lines[][4] = {
-					{ width + ox,-height-3.0 + oy_off },
-					{ width + 2.0f + ox,-height-2.0 + oy_off },
+					{ width + ox,-height - 3.0 + oy_off },
+					{ width + 2.0f + ox,-height - 2.0 + oy_off },
 					{ width + 3.0f + ox,-height + oy_off },
 					{ width + 3.0f + ox,-0.0f + oy_off },
 					{ width + 3.0f + ox,height + oy_off },
-					{ width + 2.0f + ox,height+2.0 + oy_off },
-					{ width + ox,height+3.0 + oy_off },
-					{ 0.0f + ox,height+3.0 + oy_off },
-					{ -width + ox,height+3.0 + oy_off },
-					{ -width - 2.0f + ox,height+2.0 + oy_off },
+					{ width + 2.0f + ox,height + 2.0 + oy_off },
+					{ width + ox,height + 3.0 + oy_off },
+					{ 0.0f + ox,height + 3.0 + oy_off },
+					{ -width + ox,height + 3.0 + oy_off },
+					{ -width - 2.0f + ox,height + 2.0 + oy_off },
 					{ -width - 3.0f + ox,height + oy_off },
 					{ -width - 3.0f + ox,0.0f + oy_off },
 					{ -width - 3.0f + ox,-height + oy_off },
-					{ -width - 2.0f + ox,-height-2.0 + oy_off },
-					{ -width + ox,-height-3.0 + oy_off },
-					{ -12.0f + ox,-height-3.0 + oy_off },
-					{ -0.0f + ox,(-height-30.0) + oy_off },
-					{ 12.0f + ox,-height-3.0 + oy_off },
-					{ width + ox,-height-3.0 + oy_off } };
+					{ -width - 2.0f + ox,-height - 2.0 + oy_off },
+					{ -width + ox,-height - 3.0 + oy_off },
+					{ -12.0f + ox,-height - 3.0 + oy_off },
+					{ -0.0f + ox,(-height - 30.0) + oy_off },
+					{ 12.0f + ox,-height - 3.0 + oy_off },
+					{ width + ox,-height - 3.0 + oy_off } };
 
 				MPointArray m_annotation_triangles(annotation_triangles, 54);
 				MPointArray m_annotation_lines(annotation_lines, 19);
@@ -3875,7 +4053,7 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 				drawManager.setColor(MColor(0.0, 0.0, 0.0, 0.8));
 				drawManager.mesh2d(MHWRender::MUIDrawManager::kTriangles, m_annotation_triangles);
 				drawManager.setColor(MColor(1.0, 1.0, 1.0, 1.0));
-				drawManager.lineStrip( m_annotation_lines, true);
+				drawManager.lineStrip(m_annotation_lines, true);
 
 				drawManager.setColor(MColor(0.0, 0.0, 0.0, 1.0));
 				drawManager.setFontSize(11);
@@ -3894,7 +4072,7 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 			if (pLocatorData->m_debugType == 1)
 			{
 
-
+				drawManager.icon(center, "SCALE_PIVOT", 1.0);
 
 				MPoint p = MPoint::origin;
 				p *= pLocatorData->m_inLoc_mat;
@@ -3913,6 +4091,9 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 			// Frame counter
 			if (pLocatorData->m_debugType == 2)
 			{
+
+				drawManager.icon(center, "SCALE_PIVOT", 1.0);
+
 				drawManager.setFontName("Arial");
 
 
@@ -3939,6 +4120,7 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 			// 3 Double
 			if (pLocatorData->m_debugType == 3)
 			{
+				drawManager.icon(center, "SCALE_PIVOT", 1.0);
 
 				drawManager.setFontName("Arial");
 
@@ -4022,6 +4204,8 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 			if (pLocatorData->m_debugType == 4)
 			{
 
+				drawManager.icon(center, "SCALE_PIVOT", 1.0);
+
 				MPoint p = MPoint::origin;
 				p *= pLocatorData->m_inLoc_mat;
 
@@ -4073,10 +4257,10 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 
 				drawManager.setFontSize(15);
 				drawManager.setColor(MColor(0.0, 0.0, 0.0, 1.0));
-				drawManager.text2d(MPoint(ox - radius*0.5, oy + 10), tempStr);
+				drawManager.text2d(MPoint(ox - radius * 0.5, oy + 10), tempStr);
 
 				drawManager.setColor(MColor(1.0, 1.0, 1.0, 1.0));
-				drawManager.text2d(MPoint(ox - radius*0.5, oy + 10 + 2), tempStr);
+				drawManager.text2d(MPoint(ox - radius * 0.5, oy + 10 + 2), tempStr);
 
 
 			}
@@ -4089,8 +4273,8 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 				if (pLocatorData->m_inPoints.length() > 0)
 				{
 
-					drawManager.setColor(MColor(1.0, 0.0, 0.0, 1.0));
-					drawManager.setPointSize(2);
+					drawManager.setColor(MColor(1.0, 1.0, 1.0, 1.0));
+					drawManager.setPointSize(1);
 					drawManager.points(pLocatorData->m_inPoints, false);
 
 					drawManager.setFontSize(12);
@@ -4098,23 +4282,29 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 					for (auto i = 0; i < pLocatorData->m_inPoints.length(); i++)
 					{
 
-						MString tempStr = MString() + i;
 
-						MPoint p = pLocatorData->m_inPoints[i];
-						double ox, oy;
-						frameContext.worldToViewport(p, ox, oy);
 
-						drawManager.setColor(MColor(1.0, 0.0, 0.0, 1.0));
-						drawManager.circle2d(MPoint(ox, oy), 2, true);
+						if (pLocatorData->m_debugPointsNumberDisplay)
+						{
 
-						//drawManager.setColor(MColor(1.0, 0.3, 0.3, 1.0));
-						//drawManager.circle2d(MPoint(ox, oy), 4, false);
 
-						drawManager.setColor(MColor(0.0, 0.0, 0.0, 1.0));
-						drawManager.text2d(MPoint(ox, oy + 2), tempStr);
+							MPoint p = pLocatorData->m_inPoints[i];
+							double ox, oy;
+							frameContext.worldToViewport(p, ox, oy);
 
-						drawManager.setColor(MColor(1.0, 1.0, 1.0, 1.0));
-						drawManager.text2d(MPoint(ox, oy + 4), tempStr);
+							//drawManager.setColor(MColor(1.0, 0.0, 0.0, 1.0));
+							//drawManager.circle2d(MPoint(ox, oy), 2, true);
+
+
+							MString tempStr = MString() + i;
+
+							drawManager.setColor(MColor(0.0, 0.0, 0.0, 1.0));
+							drawManager.text2d(MPoint(ox, oy + 2), tempStr);
+
+							drawManager.setColor(MColor(1.0, 1.0, 1.0, 1.0));
+							drawManager.text2d(MPoint(ox, oy + 4), tempStr);
+						}
+
 
 
 
@@ -4203,7 +4393,7 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 #if MAYA_API_VERSION > 201600
 	if (pLocatorData->m_drawOnTop)
 	{
-		
+
 		drawManager.endDrawInXray();
 		drawManager.endDrawable();
 	}
@@ -4656,6 +4846,17 @@ MStatus BaseLoc::initialize()
 	nAttr.setKeyable(true);
 	nAttr.setChannelBox(true);
 	addAttribute(aWorldSpace);
+
+	// Debug overrides
+
+	aDebugPointsNumberDisplay = nAttr.create("debugPointsNumberDisplay", "debugPointsNumberDisplay", MFnNumericData::kBoolean);
+	nAttr.setStorable(true);
+	nAttr.setReadable(false);
+	nAttr.setDefault(true);
+	nAttr.setKeyable(true);
+	nAttr.setChannelBox(true);
+	addAttribute(aDebugPointsNumberDisplay);
+
 
 	// ---------------------------------------------------------------------------------------------------
 	// Draw style

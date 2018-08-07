@@ -179,6 +179,8 @@ public:
 	static MObject		aDebugInput3Double;
 	static MObject		aDebugInputPoints;
 
+	static MObject		aDebugPointsNumberDisplay;
+
 	static MObject		aTime;
 
 private:
@@ -246,6 +248,10 @@ public:
 	bool					m_mirror_y;
 	bool					m_mirror_z;
 	bool					m_worldSpace;
+
+	// Debug
+	bool					m_debugPointsNumberDisplay;
+
 
 	int						m_drawPresets;
 	int						m_drawIconType;
@@ -363,7 +369,7 @@ protected:
 private:
 
 	MStatus getVectorArray(MFnArrayAttrsData &particleFn, const MString vectorName, MVectorArray &vectorArray, bool &exists);
-	MStatus getDoubleArray(MFnArrayAttrsData &particleFn, const MString doubleName, MDoubleArray &doubleArray, bool &exists);
+	MStatus getIntArray(MFnArrayAttrsData &particleFn, const MString intName, MIntArray &intArray, bool &exists);
 
 	BaseLocOverride(const MObject& obj);
 
