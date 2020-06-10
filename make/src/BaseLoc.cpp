@@ -43,11 +43,12 @@ MObject     BaseLoc::aScaleZ;
 MObject     BaseLoc::aDivision;
 MObject		BaseLoc::aDispObj;
 MObject		BaseLoc::aDispNum;
-MObject		BaseLoc::aDispCard;
+//MObject		BaseLoc::aDispCard;
 MObject		BaseLoc::aDispLoc;
 MObject		BaseLoc::aDispLocPivot;
 MObject		BaseLoc::aDispText;
 MObject     BaseLoc::aDrawOnTop;
+MObject     BaseLoc::aBillboard;
 
 MObject		BaseLoc::aMirrorX;
 MObject		BaseLoc::aMirrorY;
@@ -342,828 +343,828 @@ void BaseLoc::draw(M3dView & view, const MDagPath & /*path*/, M3dView::DisplaySt
 
 
 
-#if MAYA_API_VERSION < 201600
-
-	// Get ID
-
-	MObject thisNode = thisMObject();
-	MPlug p(thisNode, aLocID);
-	int locID;
-	p.getValue(locID);
-
-	// Get display Locator
-	p = MPlug(thisNode, aDispLoc);
-	bool displLoc;
-	p.getValue(displLoc);
-
-	m_modelViewMat = MMatrix();
-	view.modelViewMatrix(m_modelViewMat);
-
-	//// Get time
-	//p = MPlug(thisNode, aTime);
-	//MTime currentTime;
-	//p.getValue(currentTime);
-
-
-	// Get input Locator Matricies
-	p = MPlug(thisNode, aInLocPosA);
-	MObject o_inlocMatA;
-	p.getValue(o_inlocMatA);
-
-	p = MPlug(thisNode, aInLocPosB);
-	MObject o_inlocMatB;
-	p.getValue(o_inlocMatB);
-
-	MMatrix m_inlocMatA, m_inlocMatB;
-	MFnMatrixData mfMA(o_inlocMatA);
-	MFnMatrixData mfMB(o_inlocMatB);
-
-	MTransformationMatrix inLocA_posMat(mfMA.matrix());
-	MTransformationMatrix inLocB_posMat(mfMB.matrix());
-
-	MPoint inLocA_pos = inLocA_posMat.getTranslation(MSpace::kWorld);
-	MPoint inLocB_pos = inLocB_posMat.getTranslation(MSpace::kWorld);
-
-
-	// Get Local position of the Shape node
-	// Get local Pos X
-	p = MPlug(thisNode, localPositionX);
-	double localPosX;
-	p.getValue(localPosX);
-
-	// Get local Pos Y
-	p = MPlug(thisNode, localPositionY);
-	double localPosY;
-	p.getValue(localPosY);
-
-	// Get local Pos Z
-	p = MPlug(thisNode, localPositionZ);
-	double localPosZ;
-	p.getValue(localPosZ);
-
-
-	// Get offsetX
-	p = MPlug(thisNode, aOffsetX);
-	double offsetX;
-	p.getValue(offsetX);
-
-	// Get offsetY
-	p = MPlug(thisNode, aOffsetY);
-	double offsetY;
-	p.getValue(offsetY);
-
-	// Get offsetZ
-	p = MPlug(thisNode, aOffsetZ);
-	double offsetZ;
-	p.getValue(offsetZ);
-
-
-	// Get rotateX
-	p = MPlug(thisNode, aRotateX);
-	double rotateX;
-	p.getValue(rotateX);
-
-	// Get rotateY
-	p = MPlug(thisNode, aRotateY);
-	double rotateY;
-	p.getValue(rotateY);
-
-	// Get rotateZ
-	p = MPlug(thisNode, aRotateZ);
-	double rotateZ;
-	p.getValue(rotateZ);
-
-
-
-	// Get scaleX
-	p = MPlug(thisNode, aScaleX);
-	double scaleX;
-	p.getValue(scaleX);
-
-	// Get scaleY
-	p = MPlug(thisNode, aScaleY);
-	double scaleY;
-	p.getValue(scaleY);
-
-	// Get scaleZ
-	p = MPlug(thisNode, aScaleZ);
-	double scaleZ;
-	p.getValue(scaleZ);
-
-	double scale[3] = { scaleX,scaleY,scaleZ };
-
-
-
-
-
-
-
-
-	// Calculate rotation
-	MEulerRotation rotOffEuler(rotateX  * (M_PI / 180.0), rotateY  * (M_PI / 180.0), rotateZ * (M_PI / 180.0), MEulerRotation::kXYZ);
-	MTransformationMatrix rotOffTMatrix;
-
-
-	rotOffTMatrix.setScale(scale, MSpace::kObject);
-	rotOffTMatrix.rotateBy(rotOffEuler, MSpace::kObject);
-
-	MMatrix rM = rotOffTMatrix.asMatrix();
-
-	// Get draw preset
-	p = MPlug(thisNode, aDrawPresets);
-	int drawPresets;
-	p.getValue(drawPresets);
-
-	// Get Icon draw type
-	p = MPlug(thisNode, aDrawIconsTypes);
-	int drawIconType;
-	p.getValue(drawIconType);
-
-	// Get 2D icon draw type
-	p = MPlug(thisNode, aTwoDIconsTypes);
-	int draw_twod_IconType;
-	p.getValue(draw_twod_IconType);
-
-	// Get Icon draw type
-	p = MPlug(thisNode, aRadius);
-	float r;
-	p.getValue(r);
-
-	// Get allways face camera
-	p = MPlug(thisNode, aDispCard);
-	bool dispCard;
-	p.getValue(dispCard);
-
-	// Get Line color
-	MColor lineColor;
-	p = MPlug(thisNode, aLineColor);
-	MPlug c = p.child(0);
-	c.getValue(lineColor.r);
-	c = p.child(1);
-	c.getValue(lineColor.g);
-	c = p.child(2);
-	c.getValue(lineColor.b);
-
-	// Get line alpha
-	p = MPlug(thisNode, aLineAlpha);
-	p.getValue(lineColor.a);
-
-	// Get polygon color
-	MColor polygonColor;
-	p = MPlug(thisNode, aPolygonColor);
-	c = p.child(0);
-	c.getValue(polygonColor.r);
-	c = p.child(1);
-	c.getValue(polygonColor.g);
-	c = p.child(2);
-	c.getValue(polygonColor.b);
-
-	// Get polygon alpha
-	p = MPlug(thisNode, aPolygonAlpha);
-	p.getValue(polygonColor.a);
-
-
-	// OFFEST Vector
-
-	MVector offV(offsetX, offsetY, offsetZ);
-	offV += MVector(localPosX, localPosY, localPosZ);
-
-	MColor activeLineCol = MColor(lineColor.r, lineColor.g, lineColor.b, lineColor.a);
-	MColor activePolyCol = MColor(polygonColor.r, polygonColor.g, polygonColor.b, polygonColor.a);
-
-	if (displLoc)
-	{
-
-		// Draw locator
-		view.beginGL();
-
-		glPushAttrib(GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT | GL_PIXEL_MODE_BIT);
-
-
-		float colour[4];
-		glGetFloatv(GL_CURRENT_COLOR, colour);
-
-
-		if (status == M3dView::kActive)
-		{
-			activePolyCol = MColor(1.0, 1.0, 1.0, polygonColor.a + 0.25);
-			activeLineCol = MColor(1.0, 1.0, 1.0, polygonColor.a + 0.25);
-		}
-
-		if (status == M3dView::kLead)
-		{
-			activePolyCol = MColor(colour[0], colour[1], colour[2], polygonColor.a + 0.25);
-			activeLineCol = MColor(colour[0], colour[1], colour[2], 1.0);
-		}
-
-		if (status == M3dView::kDormant)
-		{
-			activePolyCol = MColor(polygonColor.r, polygonColor.g, polygonColor.b, polygonColor.a);
-		}
-
-		if (status == M3dView::kWireFrame)
-		{
-			activePolyCol = MColor(0.0, 0.0, 0.0, 1.0);
-		}
-
-		if (status == M3dView::kTemplate)
-		{
-			activePolyCol = MColor(0.0, 0.0, 1.0, 1.0);
-		}
-
-
-		if (polygonColor.a < 1.0f)
-		{
-			glEnable(GL_BLEND);
-			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-
-		}
-
-		glColor4d(activePolyCol.r, activePolyCol.g, activePolyCol.b, activePolyCol.a);
-
-		// Draw
-		glPointSize(5);
-
-
-		// Draw Circle
-		if (drawPresets == 0)
-		{
-
-			int division = 50;
-
-			MFloatPointArray points(division);
-
-			glBegin(GL_LINE_LOOP);
-
-			//glColor4d(lineColor.r,lineColor.g,lineColor.b, lineColor.a);
-
-			for (double i = 0; i < 2 * M_PI; i += M_PI / division)
-			{
-				MPoint circlePoint = MPoint(cos(i) * (r*0.5), 0.0, sin(i) * (r*0.5));
-				circlePoint *= rM;
-				MVector circlePointVector(circlePoint);
-
-				if (dispCard)
-				{
-
-					MEulerRotation rotOffEuler(90 * (M_PI / 180.0), 0.0, 0.0, MEulerRotation::kXYZ);
-					MTransformationMatrix rotOffTMatrix;
-
-					rotOffTMatrix.rotateBy(rotOffEuler, MSpace::kObject);
-
-					circlePointVector *= rotOffTMatrix.asMatrix();
-					circlePointVector *= m_modelViewMat.inverse();
-
-				}
-
-				circlePointVector += offV;
-
-
-
-				glVertex3d(circlePointVector.x, circlePointVector.y, circlePointVector.z);
-			}
-
-			glEnd();
-
-
-			//
-
-
-			glBegin(GL_TRIANGLE_FAN);
-
-			//glColor4d(polygonColor.r,polygonColor.g,polygonColor.b,polygonColor.a);
-
-			for (double i = 0; i < 2 * M_PI; i += M_PI / division)
-			{
-				MPoint circlePoint = MPoint(cos(i) * (r*0.5), 0.0, sin(i) * (r*0.5));
-
-
-				circlePoint *= rM;
-				MVector circlePointVector(circlePoint);
-
-
-				if (dispCard)
-				{
-
-					MEulerRotation rotOffEuler(90 * (M_PI / 180.0), 0.0, 0.0, MEulerRotation::kXYZ);
-					MTransformationMatrix rotOffTMatrix;
-
-					rotOffTMatrix.rotateBy(rotOffEuler, MSpace::kObject);
-
-					circlePointVector *= rotOffTMatrix.asMatrix();
-					circlePointVector *= m_modelViewMat.inverse();
-
-				}
-
-
-				circlePointVector += offV;
-
-
-				glVertex3d(circlePointVector.x, circlePointVector.y, circlePointVector.z);
-			}
-
-			glEnd();
-
-
-			//
-
-
-			glPopAttrib();
-
-		}
-
-		// Draw Box
-		if (drawPresets == 1)
-		{
-
-			glBegin(GL_TRIANGLE_FAN);
-
-			glVertex3f((MPoint(0.5f*r, -0.5f*r, 0.5f*r)*rM).x + offV.x, (MPoint(0.5f*r, -0.5f*r, 0.5f*r)*rM).y + offV.y, (MPoint(0.5f*r, -0.5f*r, 0.5f*r)*rM).z + offV.z);
-			glVertex3f((MPoint(0.5f*r, 0.5f*r, 0.5f*r)*rM).x + offV.x, (MPoint(0.5f*r, 0.5f*r, 0.5f*r)*rM).y + offV.y, (MPoint(0.5f*r, 0.5f*r, 0.5f*r)*rM).z + offV.z);
-			glVertex3f((MPoint(-0.5f*r, 0.5f*r, 0.5f*r)*rM).x + offV.x, (MPoint(-0.5f*r, 0.5f*r, 0.5f*r)*rM).y + offV.y, (MPoint(-0.5f*r, 0.5f*r, 0.5f*r)*rM).z + offV.z);
-			glVertex3f((MPoint(-0.5f*r, -0.5f*r, 0.5f*r)*rM).x + offV.x, (MPoint(-0.5f*r, -0.5f*r, 0.5f*r)*rM).y + offV.y, (MPoint(-0.5f*r, -0.5f*r, 0.5f*r)*rM).z + offV.z);
-			glEnd();
-
-			// Purple side - RIGHT
-			glBegin(GL_TRIANGLE_FAN);
-
-			glVertex3f((MPoint(0.5f*r, -0.5f*r, -0.5f*r)*rM).x + offV.x, (MPoint(0.5f*r, -0.5f*r, -0.5f*r)*rM).y + offV.y, (MPoint(0.5f*r, -0.5f*r, -0.5f*r)*rM).z + offV.z);
-			glVertex3f((MPoint(0.5f*r, 0.5f*r, -0.5f*r)*rM).x + offV.x, (MPoint(0.5f*r, 0.5f*r, -0.5f*r)*rM).y + offV.y, (MPoint(0.5f*r, 0.5f*r, -0.5f*r)*rM).z + offV.z);
-			glVertex3f((MPoint(0.5f*r, 0.5f*r, 0.5f*r)*rM).x + offV.x, (MPoint(0.5f*r, 0.5f*r, 0.5f*r)*rM).y + offV.y, (MPoint(0.5f*r, 0.5f*r, 0.5f*r)*rM).z + offV.z);
-			glVertex3f((MPoint(0.5f*r, -0.5f*r, 0.5f*r)*rM).x + offV.x, (MPoint(0.5f*r, -0.5f*r, 0.5f*r)*rM).y + offV.y, (MPoint(0.5f*r, -0.5f*r, 0.5f*r)*rM).z + offV.z);
-			glEnd();
-
-			// Green side - LEFT
-			glBegin(GL_TRIANGLE_FAN);
-
-			glVertex3f((MPoint(-0.5f*r, -0.5f*r, 0.5f*r)*rM).x + offV.x, (MPoint(-0.5f*r, -0.5f*r, 0.5f*r)*rM).y + offV.y, (MPoint(-0.5f*r, -0.5f*r, 0.5f*r)*rM).z + offV.z);
-			glVertex3f((MPoint(-0.5f*r, 0.5f*r, 0.5f*r)*rM).x + offV.x, (MPoint(-0.5f*r, 0.5f*r, 0.5f*r)*rM).y + offV.y, (MPoint(-0.5f*r, 0.5f*r, 0.5f*r)*rM).z + offV.z);
-			glVertex3f((MPoint(-0.5f*r, 0.5f*r, -0.5f*r)*rM).x + offV.x, (MPoint(-0.5f*r, 0.5f*r, -0.5f*r)*rM).y + offV.y, (MPoint(-0.5f*r, 0.5f*r, -0.5f*r)*rM).z + offV.z);
-			glVertex3f((MPoint(-0.5f*r, -0.5f*r, -0.5f*r)*rM).x + offV.x, (MPoint(-0.5f*r, -0.5f*r, -0.5f*r)*rM).y + offV.y, (MPoint(-0.5f*r, -0.5f*r, -0.5f*r)*rM).z + offV.z);
-			glEnd();
-
-			// Blue side - TOP
-			glBegin(GL_TRIANGLE_FAN);
-
-			glVertex3f((MPoint(0.5f*r, 0.5f*r, 0.5f*r)*rM).x + offV.x, (MPoint(0.5f*r, 0.5f*r, 0.5f*r)*rM).y + offV.y, (MPoint(0.5f*r, 0.5f*r, 0.5f*r)*rM).z + offV.z);
-			glVertex3f((MPoint(0.5f*r, 0.5f*r, -0.5f*r)*rM).x + offV.x, (MPoint(0.5f*r, 0.5f*r, -0.5f*r)*rM).y + offV.y, (MPoint(0.5f*r, 0.5f*r, -0.5f*r)*rM).z + offV.z);
-			glVertex3f((MPoint(-0.5f*r, 0.5f*r, -0.5f*r)*rM).x + offV.x, (MPoint(-0.5f*r, 0.5f*r, -0.5f*r)*rM).y + offV.y, (MPoint(-0.5f*r, 0.5f*r, -0.5f*r)*rM).z + offV.z);
-			glVertex3f((MPoint(-0.5f*r, 0.5f*r, 0.5f*r)*rM).x + offV.x, (MPoint(-0.5f*r, 0.5f*r, 0.5f*r)*rM).y + offV.y, (MPoint(-0.5f*r, 0.5f*r, 0.5f*r)*rM).z + offV.z);
-			glEnd();
-
-			// Red side - BOTTOM
-			glBegin(GL_TRIANGLE_FAN);
-
-			glVertex3f((MPoint(0.5f*r, -0.5f*r, -0.5f*r)*rM).x + offV.x, (MPoint(0.5f*r, -0.5f*r, -0.5f*r)*rM).y + offV.y, (MPoint(0.5f*r, -0.5f*r, -0.5f*r)*rM).z + offV.z);
-			glVertex3f((MPoint(0.5f*r, -0.5f*r, 0.5f*r)*rM).x + offV.x, (MPoint(0.5f*r, -0.5f*r, 0.5f*r)*rM).y + offV.y, (MPoint(0.5f*r, -0.5f*r, 0.5f*r)*rM).z + offV.z);
-			glVertex3f((MPoint(-0.5f*r, -0.5f*r, 0.5f*r)*rM).x + offV.x, (MPoint(-0.5f*r, -0.5f*r, 0.5f*r)*rM).y + offV.y, (MPoint(-0.5f*r, -0.5f*r, 0.5f*r)*rM).z + offV.z);
-			glVertex3f((MPoint(-0.5f*r, -0.5f*r, -0.5f*r)*rM).x + offV.x, (MPoint(-0.5f*r, -0.5f*r, -0.5f*r)*rM).y + offV.y, (MPoint(-0.5f*r, -0.5f*r, -0.5f*r)*rM).z + offV.z);
-			glEnd();
-
-			glEnd();
-			glPopAttrib();
-
-		}
-
-		// Draw sphere
-		if (drawPresets == 2)
-		{
-			int lats = 20;
-			int longs = 20;
-
-			for (int i = 0; i <= lats; i++) {
-				double lat0 = M_PI * (-0.5 + (double)(i - 1) / lats);
-				double z0 = sin(lat0);
-				double zr0 = cos(lat0);
-				z0 *= r * 0.5;
-				zr0 *= r * 0.5;
-
-				double lat1 = M_PI * (-0.5 + (double)i / lats);
-				double z1 = sin(lat1);
-				double zr1 = cos(lat1);
-				z1 *= r * 0.5;
-				zr1 *= r * 0.5;
-
-				glBegin(GL_QUAD_STRIP);
-				for (int j = 0; j <= longs; j++)
-				{
-					double lng = 2 * M_PI * (double)(j - 1) / longs;
-					double x = cos(lng);
-					double y = sin(lng);
-
-					MPoint a(float(x) * float(zr0), float(y) * float(zr0), float(z0));
-					MPoint b(float(x) * float(zr1), float(y) * float(zr1), float(z1));
-
-					a *= rM;
-					b *= rM;
-
-					glVertex3f(float(a.x) + offV.x, float(a.y) + offV.y, float(a.z) + offV.z);
-					glVertex3f(float(b.x) + offV.x, float(b.y) + offV.y, float(b.z) + offV.z);
-				}
-				glEnd();
-
-			}
-
-
-		}
-
-		// Draw Cone
-		if (drawPresets == 3)
-		{
-			MPoint conePoint(0.0, (r*0.5), 0.0);
-
-			glBegin(GL_TRIANGLE_FAN);
-
-			conePoint *= rM;
-			conePoint += offV;
-
-			double division = 9;
-
-			glVertex3f(conePoint.x, conePoint.y, conePoint.z);
-
-			for (double angle = 0; angle < 2 * M_PI; angle += M_PI / division) {
-				conePoint = MPoint(sin(angle) *  (r*0.5), 0.0, cos(angle) *  (r*0.5));
-				conePoint *= rM;
-				conePoint += offV;
-				glVertex3f(conePoint.x, conePoint.y, conePoint.z);
-			}
-			glEnd();
-
-		}
-
-
-		// Draw Rectangle
-		if (drawPresets == 4)
-		{
-
-			glBegin(GL_TRIANGLE_FAN);
-
-			MPoint a(-1 * (r*0.5f), 0.0, -1 * (r*0.5f));
-			MPoint b(-1 * (r*0.5f), 0.0, (r*0.5f));
-			MPoint c((r*0.5f), 0.0, (r*0.5f));
-			MPoint d((r*0.5f), 0.0, -1 * (r*0.5f));
-
-			a *= rM;
-			b *= rM;
-			c *= rM;
-			d *= rM;
-
-			glVertex3f(a.x + offV.x, a.y + offV.y, a.z + offV.z);
-			glVertex3f(b.x + offV.x, b.y + offV.y, b.z + offV.z);
-			glVertex3f(c.x + offV.x, c.y + offV.y, c.z + offV.z);
-			glVertex3f(d.x + offV.x, d.y + offV.y, d.z + offV.z);
-
-			glEnd();
-
-
-			glColor4d(activeLineCol.r, activeLineCol.g, activeLineCol.b, activeLineCol.a);
-			glBegin(GL_LINE_LOOP);
-
-			glVertex3f(a.x + offV.x, a.y + offV.y, a.z + offV.z);
-			glVertex3f(b.x + offV.x, b.y + offV.y, b.z + offV.z);
-			glVertex3f(c.x + offV.x, c.y + offV.y, c.z + offV.z);
-			glVertex3f(d.x + offV.x, d.y + offV.y, d.z + offV.z);
-
-			glEnd();
-
-			glPopAttrib();
-
-		}
-
-
-		// Draw Drag handle
-		if (drawPresets == 5)
-		{
-
-			int division = 20;
-
-			MFloatPointArray points(division);
-
-			MTransformationMatrix rotDragMat;
-			rotDragMat.rotateBy(rotOffEuler, MSpace::kObject);
-			MMatrix rdM = rotDragMat.asMatrix();
-
-			// Draw circle
-			glBegin(GL_TRIANGLE_FAN);
-
-			for (double i = 0; i < 2 * M_PI; i += M_PI / division)
-			{
-
-				MPoint circlePoint = MPoint(cos(i) * (r*0.5), sin(i) * (r*0.5), 0.0);
-				MVector circlePointVector(circlePoint);
-
-
-				circlePointVector += MVector(offsetX, offsetY, offsetZ);
-				circlePointVector *= rdM;
-				circlePointVector -= MVector(offsetX, offsetY, offsetZ);
-				circlePointVector += offV;
-
-				glVertex3d(circlePointVector.x, circlePointVector.y, circlePointVector.z);
-
-			}
-
-			glEnd();
-
-
-			// Draw draghandle
-			glBegin(GL_LINE_LOOP);
-			glColor4d(activeLineCol.r, activeLineCol.g, activeLineCol.b, activeLineCol.a);
-			glVertex3d(localPosX, localPosY, localPosZ);
-			MVector endPV;
-
-			endPV += MVector(offsetX, offsetY - (r*0.5), offsetZ);
-			endPV *= rdM;
-			endPV -= MVector(offsetX, offsetY, offsetZ);
-			endPV += offV;
-
-
-			glVertex3d(endPV.x, endPV.y, endPV.z);
-
-			glEnd();
-
-			glPopAttrib();
-
-		}
-
-
-		// Draw Icons
-		if (drawPresets == 6 || drawPresets == 8)
-		{
-
-
-
-			int locPointsNum;
-			int locTrianglesNum;
-
-
-
-			MPointArray tmpA;
-			if (drawIconType == 0) { locPointsNum = 37; locTrianglesNum = 144; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locCrossPoints[i][0], m_locCrossPoints[i][1], m_locCrossPoints[i][2])*r*rM + offV); } }
-			if (drawIconType == 1) { locPointsNum = 26; locTrianglesNum = 261; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locBoxOpenedPoints[i][0], m_locBoxOpenedPoints[i][1], m_locBoxOpenedPoints[i][2])*r*rM + offV); } }
-			if (drawIconType == 2) { locPointsNum = 54; locTrianglesNum = 417; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locTagPoints[i][0], m_locTagPoints[i][1], m_locTagPoints[i][2])*r*rM + offV); } }
-			if (drawIconType == 3) { locPointsNum = 36; locTrianglesNum = 159; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locArrowUpPoints[i][0], m_locArrowUpPoints[i][1], m_locArrowUpPoints[i][2])*r*rM + offV); } }
-			if (drawIconType == 4) { locPointsNum = 149; locTrianglesNum = 336; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locHorizontalBorderPoints[i][0], m_locHorizontalBorderPoints[i][1], m_locHorizontalBorderPoints[i][2])*r*rM + offV); } }
-			if (drawIconType == 5) { locPointsNum = 99; locTrianglesNum = 678; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locCameraPoints[i][0], m_locCameraPoints[i][1], m_locCameraPoints[i][2])*r*rM + offV); } }
-			if (drawIconType == 6) { locPointsNum = 37; locTrianglesNum = 216; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locClosePoints[i][0], m_locClosePoints[i][1], m_locClosePoints[i][2])*r*rM + offV); } }
-			if (drawIconType == 7) { locPointsNum = 59; locTrianglesNum = 300; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locEyePoints[i][0], m_locEyePoints[i][1], m_locEyePoints[i][2])*r*rM + offV); } }
-			if (drawIconType == 8) { locPointsNum = 22; locTrianglesNum = 147; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locFlashPoints[i][0], m_locFlashPoints[i][1], m_locFlashPoints[i][2])*r*rM + offV); } }
-			if (drawIconType == 9) { locPointsNum = 44; locTrianglesNum = 279; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locTshirtPoints[i][0], m_locTshirtPoints[i][1], m_locTshirtPoints[i][2])*r*rM + offV); } }
-			if (drawIconType == 10) { locPointsNum = 51; locTrianglesNum = 294; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locLockPoints[i][0], m_locLockPoints[i][1], m_locLockPoints[i][2])*r*rM + offV); } }
-			if (drawIconType == 11) { locPointsNum = 147; locTrianglesNum = 870; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locGroupPoints[i][0], m_locGroupPoints[i][1], m_locGroupPoints[i][2])*r*rM + offV); } }
-			if (drawIconType == 12) { locPointsNum = 116; locTrianglesNum = 543; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locClockPoints[i][0], m_locClockPoints[i][1], m_locClockPoints[i][2])*r*rM + offV); } }
-			if (drawIconType == 13) { locPointsNum = 83; locTrianglesNum = 276; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locHomePoints[i][0], m_locHomePoints[i][1], m_locHomePoints[i][2])*r*rM + offV); } }
-			if (drawIconType == 14) { locPointsNum = 60; locTrianglesNum = 285; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locMalePoints[i][0], m_locMalePoints[i][1], m_locMalePoints[i][2])*r*rM + offV); } }
-			if (drawIconType == 15) { locPointsNum = 60; locTrianglesNum = 249; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locFemalePoints[i][0], m_locFemalePoints[i][1], m_locFemalePoints[i][2])*r*rM + offV); } }
-			if (drawIconType == 16) { locPointsNum = 57; locTrianglesNum = 246; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locLightbulbPoints[i][0], m_locLightbulbPoints[i][1], m_locLightbulbPoints[i][2])*r*rM + offV); } }
-			if (drawIconType == 17) { locPointsNum = 51; locTrianglesNum = 210; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locRotatecounterclockwisePoints[i][0], m_locRotatecounterclockwisePoints[i][1], m_locRotatecounterclockwisePoints[i][2])*r*rM + offV); } }
-			if (drawIconType == 18) { locPointsNum = 46; locTrianglesNum = 183; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locPinetreePoints[i][0], m_locPinetreePoints[i][1], m_locPinetreePoints[i][2])*r*rM + offV); } }
-			if (drawIconType == 19) { locPointsNum = 68; locTrianglesNum = 537; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locHazardPoints[i][0], m_locHazardPoints[i][1], m_locHazardPoints[i][2])*r*rM + offV); } }
-			if (drawIconType == 20) { locPointsNum = 53; locTrianglesNum = 204; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locMovePoints[i][0], m_locMovePoints[i][1], m_locMovePoints[i][2])*r*rM + offV); } }
-			if (drawIconType == 21) { locPointsNum = 35; locTrianglesNum = 60; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locCornersPoints[i][0], m_locCornersPoints[i][1], m_locCornersPoints[i][2])*r*rM + offV); } }
-			if (drawIconType == 22) { locPointsNum = 35; locTrianglesNum = 138; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locDirectionPoints[i][0], m_locDirectionPoints[i][1], m_locDirectionPoints[i][2])*r*rM + offV); } }
-			if (drawIconType == 23) { locPointsNum = 108; locTrianglesNum = 669; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locManwalkPoints[i][0], m_locManwalkPoints[i][1], m_locManwalkPoints[i][2])*r*rM + offV); } }
-			if (drawIconType == 24) { locPointsNum = 48; locTrianglesNum = 303; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locFeetPoints[i][0], m_locFeetPoints[i][1], m_locFeetPoints[i][2])*r*rM + offV); } }
-			if (drawIconType == 25) { locPointsNum = 56; locTrianglesNum = 181; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locmuzzleflashPoints[i][0], m_locmuzzleflashPoints[i][1], m_locmuzzleflashPoints[i][2])*r*rM + offV); } }
-			if (drawIconType == 26) { locPointsNum = 49; locTrianglesNum = 138; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locOrientPoints[i][0], m_locOrientPoints[i][1], m_locOrientPoints[i][2])*r*rM + offV); } }
-
-			if (drawPresets == 8) { tmpA.clear(); locPointsNum = 69; locTrianglesNum = 378; tmpA.setLength(locPointsNum);  for (int i = 0; i < locPointsNum; i++) { tmpA.set(MPoint(m_CameraPoints[i][0], m_CameraPoints[i][1], m_CameraPoints[i][2])*r*rM + offV, i); } }
-
-			// Calculate Outline points with breaks
-			int vC = 0;
-			for (int i = 0; i < locPointsNum; i++)
-			{
-				if (tmpA[i].distanceTo(MPoint(0.0f, 0.0f, 0.0f)*r*rM + offV) == 0.0)
-				{
-					vC += 1;
-				}
-			}
-			vector<MPointArray>	locDrawPointsB;
-			locDrawPointsB.clear();
-			locDrawPointsB.resize(vC + 1);
-
-
-			int vB = 0;
-			for (int i = 0; i < locPointsNum; i++)
-			{
-
-				if (tmpA[i].distanceTo(MPoint(0.0f, 0.0f, 0.0f)*r*rM + offV) != 0.0)
-				{
-					locDrawPointsB[vB].append(tmpA[i]);
-				}
-
-				if (tmpA[i].distanceTo(MPoint(0.0f, 0.0f, 0.0f)*r*rM + offV) == 0.0)
-				{
-					if (vB != vC)
-					{
-						vB += 1;
-					}
-
-				}
-
-			}
-
-			// calculate Triangles
-
-
-			// Calculate Polygons
-
-			MPointArray locDrawTriangles;
-			locDrawTriangles.clear();
-
-			for (int i = 0; i < locTrianglesNum; i++)
-			{
-
-
-
-
-				if (drawIconType == 0) { locDrawTriangles.append(MPoint(m_locCrossTriangles[i][0] * r, m_locCrossTriangles[i][1] * r, m_locCrossTriangles[i][2] * r)*rM + offV); }
-				if (drawIconType == 1) { locDrawTriangles.append(MPoint(m_locBoxOpenedTriangles[i][0] * r, m_locBoxOpenedTriangles[i][1] * r, m_locBoxOpenedTriangles[i][2] * r)*rM + offV); }
-				if (drawIconType == 2) { locDrawTriangles.append(MPoint(m_locTagTriangles[i][0] * r, m_locTagTriangles[i][1] * r, m_locTagTriangles[i][2] * r)*rM + offV); }
-				if (drawIconType == 3) { locDrawTriangles.append(MPoint(m_locArrowUpTriangles[i][0] * r, m_locArrowUpTriangles[i][1] * r, m_locArrowUpTriangles[i][2] * r)*rM + offV); }
-				if (drawIconType == 4) { locDrawTriangles.append(MPoint(m_locHorizontalBorderTriangles[i][0] * r, m_locHorizontalBorderTriangles[i][1] * r, m_locHorizontalBorderTriangles[i][2] * r)*rM + offV); }
-				if (drawIconType == 5) { locDrawTriangles.append(MPoint(m_locCameraTriangles[i][0] * r, m_locCameraTriangles[i][1] * r, m_locCameraTriangles[i][2] * r)*rM + offV); }
-				if (drawIconType == 6) { locDrawTriangles.append(MPoint(m_locCloseTriangles[i][0] * r, m_locCloseTriangles[i][1] * r, m_locCloseTriangles[i][2] * r)*rM + offV); }
-				if (drawIconType == 7) { locDrawTriangles.append(MPoint(m_locEyeTriangles[i][0] * r, m_locEyeTriangles[i][1] * r, m_locEyeTriangles[i][2] * r)*rM + offV); }
-				if (drawIconType == 8) { locDrawTriangles.append(MPoint(m_locFlashTriangles[i][0] * r, m_locFlashTriangles[i][1] * r, m_locFlashTriangles[i][2] * r)*rM + offV); }
-				if (drawIconType == 9) { locDrawTriangles.append(MPoint(m_locTshirtTriangles[i][0] * r, m_locTshirtTriangles[i][1] * r, m_locTshirtTriangles[i][2] * r)*rM + offV); }
-				if (drawIconType == 10) { locDrawTriangles.append(MPoint(m_locLockTriangles[i][0] * r, m_locLockTriangles[i][1] * r, m_locLockTriangles[i][2] * r)*rM + offV); }
-				if (drawIconType == 11) { locDrawTriangles.append(MPoint(m_locGroupTriangles[i][0] * r, m_locGroupTriangles[i][1] * r, m_locGroupTriangles[i][2] * r)*rM + offV); }
-				if (drawIconType == 12) { locDrawTriangles.append(MPoint(m_locClockTriangles[i][0] * r, m_locClockTriangles[i][1] * r, m_locClockTriangles[i][2] * r)*rM + offV); }
-				if (drawIconType == 13) { locDrawTriangles.append(MPoint(m_locHomeTriangles[i][0] * r, m_locHomeTriangles[i][1] * r, m_locHomeTriangles[i][2] * r)*rM + offV); }
-				if (drawIconType == 14) { locDrawTriangles.append(MPoint(m_locMaleTriangles[i][0] * r, m_locMaleTriangles[i][1] * r, m_locMaleTriangles[i][2] * r)*rM + offV); }
-				if (drawIconType == 15) { locDrawTriangles.append(MPoint(m_locFemaleTriangles[i][0] * r, m_locFemaleTriangles[i][1] * r, m_locFemaleTriangles[i][2] * r)*rM + offV); }
-				if (drawIconType == 16) { locDrawTriangles.append(MPoint(m_locLightbulbTriangles[i][0] * r, m_locLightbulbTriangles[i][1] * r, m_locLightbulbTriangles[i][2] * r)*rM + offV); }
-				if (drawIconType == 17) { locDrawTriangles.append(MPoint(m_locRotatecounterclockwiseTriangles[i][0] * r, m_locRotatecounterclockwiseTriangles[i][1] * r, m_locRotatecounterclockwiseTriangles[i][2] * r)*rM + offV); }
-				if (drawIconType == 18) { locDrawTriangles.append(MPoint(m_locPinetreeTriangles[i][0] * r, m_locPinetreeTriangles[i][1] * r, m_locPinetreeTriangles[i][2] * r)*rM + offV); }
-				if (drawIconType == 19) { locDrawTriangles.append(MPoint(m_locHazardTriangles[i][0] * r, m_locHazardTriangles[i][1] * r, m_locHazardTriangles[i][2] * r)*rM + offV); }
-				if (drawIconType == 20) { locDrawTriangles.append(MPoint(m_locMoveTriangles[i][0] * r, m_locMoveTriangles[i][1] * r, m_locMoveTriangles[i][2] * r)*rM + offV); }
-				if (drawIconType == 21) { locDrawTriangles.append(MPoint(m_locCornersTriangles[i][0] * r, m_locCornersTriangles[i][1] * r, m_locCornersTriangles[i][2] * r)*rM + offV); }
-				if (drawIconType == 22) { locDrawTriangles.append(MPoint(m_locDirectionTriangles[i][0] * r, m_locDirectionTriangles[i][1] * r, m_locDirectionTriangles[i][2] * r)*rM + offV); }
-				if (drawIconType == 23) { locDrawTriangles.append(MPoint(m_locManwalkTriangles[i][0] * r, m_locManwalkTriangles[i][1] * r, m_locManwalkTriangles[i][2] * r)*rM + offV); }
-				if (drawIconType == 24) { locDrawTriangles.append(MPoint(m_locFeetTriangles[i][0] * r, m_locFeetTriangles[i][1] * r, m_locFeetTriangles[i][2] * r)*rM + offV); }
-				if (drawIconType == 25) { locDrawTriangles.append(MPoint(m_locmuzzleflashTriangles[i][0] * r, m_locmuzzleflashTriangles[i][1] * r, m_locmuzzleflashTriangles[i][2] * r)*rM + offV); }
-				if (drawIconType == 26) { locDrawTriangles.append(MPoint(m_locOrientTiangles[i][0] * r, m_locOrientTiangles[i][1] * r, m_locOrientTiangles[i][2] * r)*rM + offV); }
-			}
-
-			if (drawPresets == 8)
-			{
-
-				locDrawTriangles.clear();
-
-				for (int i = 0; i < locTrianglesNum; i++)
-				{
-					locDrawTriangles.append(MPoint(m_CameraTiangles[i][0] * r, m_CameraTiangles[i][1] * r, m_CameraTiangles[i][2] * r)*rM + offV);
-				}
-
-			}
-
-			// Draw the icons
-
-			//glPopAttrib();
-
-			int co = 0;
-
-			glBegin(GL_TRIANGLES);
-
-			for (int i = 0; i < (locDrawTriangles.length() / 3); i++)
-			{
-
-
-				glVertex3d(locDrawTriangles[co].x, locDrawTriangles[co].y, locDrawTriangles[co].z);
-				glVertex3d(locDrawTriangles[co + 1].x, locDrawTriangles[co + 1].y, locDrawTriangles[co + 1].z);
-				glVertex3d(locDrawTriangles[co + 2].x, locDrawTriangles[co + 2].y, locDrawTriangles[co + 2].z);
-
-
-
-				co += 3;
-
-			}
-
-			glEnd();
-
-			glColor4d(activeLineCol.r, activeLineCol.g, activeLineCol.b, activeLineCol.a);
-			for (int i = 0; i < locDrawPointsB.size(); i++)
-			{
-				glBegin(GL_LINE_LOOP);
-				for (unsigned int z = 0; z < locDrawPointsB[i].length(); z++)
-				{
-					glVertex3d(locDrawPointsB[i][z].x, locDrawPointsB[i][z].y, locDrawPointsB[i][z].z);
-				}
-				glEnd();
-
-			}
-
-
-
-
-		}
-
-
-
-		// Draw Gyroscope
-		if (drawPresets == 7)
-		{
-
-			int division = 50;
-
-			MFloatPointArray points(division);
-
-			glBegin(GL_LINE_LOOP);
-			glColor4d(activeLineCol.r, activeLineCol.g + 1.0, activeLineCol.b, activeLineCol.a);
-			for (double i = 0; i < 2 * M_PI; i += M_PI / division)
-			{
-				MPoint circlePoint = MPoint(cos(i) * (r*0.5), 0.0, sin(i) * (r*0.5));
-				circlePoint *= rM;
-				MVector circlePointVector(circlePoint);
-				circlePointVector += offV;
-
-
-				glVertex3d(circlePointVector.x, circlePointVector.y, circlePointVector.z);
-			}
-
-			glEnd();
-
-
-
-			glBegin(GL_LINE_LOOP);
-			glColor4d(activeLineCol.r + 1.0, activeLineCol.g, activeLineCol.b, activeLineCol.a);
-			for (double i = 0; i < 2 * M_PI; i += M_PI / division)
-			{
-				MPoint circlePoint = MPoint(0.0, cos(i) * (r*0.5), sin(i) * (r*0.5));
-				circlePoint *= rM;
-				MVector circlePointVector(circlePoint);
-				circlePointVector += offV;
-
-
-				glVertex3d(circlePointVector.x, circlePointVector.y, circlePointVector.z);
-			}
-			glEnd();
-
-
-
-			glBegin(GL_LINE_LOOP);
-			glColor4d(activeLineCol.r, activeLineCol.g, activeLineCol.b + 1.0, activeLineCol.a);
-			for (double i = 0; i < 2 * M_PI; i += M_PI / division)
-			{
-				MPoint circlePoint = MPoint(cos(i) * (r*0.5), sin(i) * (r*0.5), 0.0);
-				circlePoint *= rM;
-				MVector circlePointVector(circlePoint);
-				circlePointVector += offV;
-
-
-				glVertex3d(circlePointVector.x, circlePointVector.y, circlePointVector.z);
-			}
-			glEnd();
-
-
-
-
-			glPopAttrib();
-
-		}
-
-
-		if (drawPresets == 9)
-		{
-
-
-			glPointSize(5);
-			glColor3d(1.0, 1.0, 0.0);
-			glBegin(GL_POINTS);
-			glVertex3d(0.0, 0.0, 0.0);
-			glEnd();
-			glPopAttrib();
-		}
-
-		// Draw A-B
-		if (drawPresets == 10)
-		{
-
-			glBegin(GL_LINE_LOOP);
-
-			MPoint a = inLocA_pos;
-			MPoint b = inLocB_pos;
-
-			a *= rM;
-			b *= rM;
-
-			glVertex3d(a.x, a.y, a.z);
-			glVertex3d(b.x, b.y, b.z);
-
-			glEnd();
-			glPopAttrib();
-
-		}
-
-
-		glPopAttrib();
-
-
-	}
-	view.endGL();
-
-#endif
+//#if MAYA_API_VERSION < 201600
+//
+//	// Get ID
+//
+//	MObject thisNode = thisMObject();
+//	MPlug p(thisNode, aLocID);
+//	int locID;
+//	p.getValue(locID);
+//
+//	// Get display Locator
+//	p = MPlug(thisNode, aDispLoc);
+//	bool displLoc;
+//	p.getValue(displLoc);
+//
+//	m_modelViewMat = MMatrix();
+//	view.modelViewMatrix(m_modelViewMat);
+//
+//	//// Get time
+//	//p = MPlug(thisNode, aTime);
+//	//MTime currentTime;
+//	//p.getValue(currentTime);
+//
+//
+//	// Get input Locator Matricies
+//	p = MPlug(thisNode, aInLocPosA);
+//	MObject o_inlocMatA;
+//	p.getValue(o_inlocMatA);
+//
+//	p = MPlug(thisNode, aInLocPosB);
+//	MObject o_inlocMatB;
+//	p.getValue(o_inlocMatB);
+//
+//	MMatrix m_inlocMatA, m_inlocMatB;
+//	MFnMatrixData mfMA(o_inlocMatA);
+//	MFnMatrixData mfMB(o_inlocMatB);
+//
+//	MTransformationMatrix inLocA_posMat(mfMA.matrix());
+//	MTransformationMatrix inLocB_posMat(mfMB.matrix());
+//
+//	MPoint inLocA_pos = inLocA_posMat.getTranslation(MSpace::kWorld);
+//	MPoint inLocB_pos = inLocB_posMat.getTranslation(MSpace::kWorld);
+//
+//
+//	// Get Local position of the Shape node
+//	// Get local Pos X
+//	p = MPlug(thisNode, localPositionX);
+//	double localPosX;
+//	p.getValue(localPosX);
+//
+//	// Get local Pos Y
+//	p = MPlug(thisNode, localPositionY);
+//	double localPosY;
+//	p.getValue(localPosY);
+//
+//	// Get local Pos Z
+//	p = MPlug(thisNode, localPositionZ);
+//	double localPosZ;
+//	p.getValue(localPosZ);
+//
+//
+//	// Get offsetX
+//	p = MPlug(thisNode, aOffsetX);
+//	double offsetX;
+//	p.getValue(offsetX);
+//
+//	// Get offsetY
+//	p = MPlug(thisNode, aOffsetY);
+//	double offsetY;
+//	p.getValue(offsetY);
+//
+//	// Get offsetZ
+//	p = MPlug(thisNode, aOffsetZ);
+//	double offsetZ;
+//	p.getValue(offsetZ);
+//
+//
+//	// Get rotateX
+//	p = MPlug(thisNode, aRotateX);
+//	double rotateX;
+//	p.getValue(rotateX);
+//
+//	// Get rotateY
+//	p = MPlug(thisNode, aRotateY);
+//	double rotateY;
+//	p.getValue(rotateY);
+//
+//	// Get rotateZ
+//	p = MPlug(thisNode, aRotateZ);
+//	double rotateZ;
+//	p.getValue(rotateZ);
+//
+//
+//
+//	// Get scaleX
+//	p = MPlug(thisNode, aScaleX);
+//	double scaleX;
+//	p.getValue(scaleX);
+//
+//	// Get scaleY
+//	p = MPlug(thisNode, aScaleY);
+//	double scaleY;
+//	p.getValue(scaleY);
+//
+//	// Get scaleZ
+//	p = MPlug(thisNode, aScaleZ);
+//	double scaleZ;
+//	p.getValue(scaleZ);
+//
+//	double scale[3] = { scaleX,scaleY,scaleZ };
+//
+//
+//
+//
+//
+//
+//
+//
+//	// Calculate rotation
+//	MEulerRotation rotOffEuler(rotateX  * (M_PI / 180.0), rotateY  * (M_PI / 180.0), rotateZ * (M_PI / 180.0), MEulerRotation::kXYZ);
+//	MTransformationMatrix rotOffTMatrix;
+//
+//
+//	rotOffTMatrix.setScale(scale, MSpace::kObject);
+//	rotOffTMatrix.rotateBy(rotOffEuler, MSpace::kObject);
+//
+//	MMatrix rM = rotOffTMatrix.asMatrix();
+//
+//	// Get draw preset
+//	p = MPlug(thisNode, aDrawPresets);
+//	int drawPresets;
+//	p.getValue(drawPresets);
+//
+//	// Get Icon draw type
+//	p = MPlug(thisNode, aDrawIconsTypes);
+//	int drawIconType;
+//	p.getValue(drawIconType);
+//
+//	// Get 2D icon draw type
+//	p = MPlug(thisNode, aTwoDIconsTypes);
+//	int draw_twod_IconType;
+//	p.getValue(draw_twod_IconType);
+//
+//	// Get Icon draw type
+//	p = MPlug(thisNode, aRadius);
+//	float r;
+//	p.getValue(r);
+//
+//	//// Get allways face camera
+//	//p = MPlug(thisNode, aDispCard);
+//	//bool dispCard;
+//	//p.getValue(dispCard);
+//
+//	// Get Line color
+//	MColor lineColor;
+//	p = MPlug(thisNode, aLineColor);
+//	MPlug c = p.child(0);
+//	c.getValue(lineColor.r);
+//	c = p.child(1);
+//	c.getValue(lineColor.g);
+//	c = p.child(2);
+//	c.getValue(lineColor.b);
+//
+//	// Get line alpha
+//	p = MPlug(thisNode, aLineAlpha);
+//	p.getValue(lineColor.a);
+//
+//	// Get polygon color
+//	MColor polygonColor;
+//	p = MPlug(thisNode, aPolygonColor);
+//	c = p.child(0);
+//	c.getValue(polygonColor.r);
+//	c = p.child(1);
+//	c.getValue(polygonColor.g);
+//	c = p.child(2);
+//	c.getValue(polygonColor.b);
+//
+//	// Get polygon alpha
+//	p = MPlug(thisNode, aPolygonAlpha);
+//	p.getValue(polygonColor.a);
+//
+//
+//	// OFFEST Vector
+//
+//	MVector offV(offsetX, offsetY, offsetZ);
+//	offV += MVector(localPosX, localPosY, localPosZ);
+//
+//	MColor activeLineCol = MColor(lineColor.r, lineColor.g, lineColor.b, lineColor.a);
+//	MColor activePolyCol = MColor(polygonColor.r, polygonColor.g, polygonColor.b, polygonColor.a);
+//
+//	if (displLoc)
+//	{
+//
+//		// Draw locator
+//		view.beginGL();
+//
+//		glPushAttrib(GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT | GL_PIXEL_MODE_BIT);
+//
+//
+//		float colour[4];
+//		glGetFloatv(GL_CURRENT_COLOR, colour);
+//
+//
+//		if (status == M3dView::kActive)
+//		{
+//			activePolyCol = MColor(1.0, 1.0, 1.0, polygonColor.a + 0.25);
+//			activeLineCol = MColor(1.0, 1.0, 1.0, polygonColor.a + 0.25);
+//		}
+//
+//		if (status == M3dView::kLead)
+//		{
+//			activePolyCol = MColor(colour[0], colour[1], colour[2], polygonColor.a + 0.25);
+//			activeLineCol = MColor(colour[0], colour[1], colour[2], 1.0);
+//		}
+//
+//		if (status == M3dView::kDormant)
+//		{
+//			activePolyCol = MColor(polygonColor.r, polygonColor.g, polygonColor.b, polygonColor.a);
+//		}
+//
+//		if (status == M3dView::kWireFrame)
+//		{
+//			activePolyCol = MColor(0.0, 0.0, 0.0, 1.0);
+//		}
+//
+//		if (status == M3dView::kTemplate)
+//		{
+//			activePolyCol = MColor(0.0, 0.0, 1.0, 1.0);
+//		}
+//
+//
+//		if (polygonColor.a < 1.0f)
+//		{
+//			glEnable(GL_BLEND);
+//			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+//
+//
+//		}
+//
+//		glColor4d(activePolyCol.r, activePolyCol.g, activePolyCol.b, activePolyCol.a);
+//
+//		// Draw
+//		glPointSize(5);
+//
+//
+//		// Draw Circle
+//		if (drawPresets == 0)
+//		{
+//
+//			int division = 50;
+//
+//			MFloatPointArray points(division);
+//
+//			glBegin(GL_LINE_LOOP);
+//
+//			//glColor4d(lineColor.r,lineColor.g,lineColor.b, lineColor.a);
+//
+//			for (double i = 0; i < 2 * M_PI; i += M_PI / division)
+//			{
+//				MPoint circlePoint = MPoint(cos(i) * (r*0.5), 0.0, sin(i) * (r*0.5));
+//				circlePoint *= rM;
+//				MVector circlePointVector(circlePoint);
+//
+//				if (dispCard)
+//				{
+//
+//					MEulerRotation rotOffEuler(90 * (M_PI / 180.0), 0.0, 0.0, MEulerRotation::kXYZ);
+//					MTransformationMatrix rotOffTMatrix;
+//
+//					rotOffTMatrix.rotateBy(rotOffEuler, MSpace::kObject);
+//
+//					circlePointVector *= rotOffTMatrix.asMatrix();
+//					circlePointVector *= m_modelViewMat.inverse();
+//
+//				}
+//
+//				circlePointVector += offV;
+//
+//
+//
+//				glVertex3d(circlePointVector.x, circlePointVector.y, circlePointVector.z);
+//			}
+//
+//			glEnd();
+//
+//
+//			//
+//
+//
+//			glBegin(GL_TRIANGLE_FAN);
+//
+//			//glColor4d(polygonColor.r,polygonColor.g,polygonColor.b,polygonColor.a);
+//
+//			for (double i = 0; i < 2 * M_PI; i += M_PI / division)
+//			{
+//				MPoint circlePoint = MPoint(cos(i) * (r*0.5), 0.0, sin(i) * (r*0.5));
+//
+//
+//				circlePoint *= rM;
+//				MVector circlePointVector(circlePoint);
+//
+//
+//				if (dispCard)
+//				{
+//
+//					MEulerRotation rotOffEuler(90 * (M_PI / 180.0), 0.0, 0.0, MEulerRotation::kXYZ);
+//					MTransformationMatrix rotOffTMatrix;
+//
+//					rotOffTMatrix.rotateBy(rotOffEuler, MSpace::kObject);
+//
+//					circlePointVector *= rotOffTMatrix.asMatrix();
+//					circlePointVector *= m_modelViewMat.inverse();
+//
+//				}
+//
+//
+//				circlePointVector += offV;
+//
+//
+//				glVertex3d(circlePointVector.x, circlePointVector.y, circlePointVector.z);
+//			}
+//
+//			glEnd();
+//
+//
+//			//
+//
+//
+//			glPopAttrib();
+//
+//		}
+//
+//		// Draw Box
+//		if (drawPresets == 1)
+//		{
+//
+//			glBegin(GL_TRIANGLE_FAN);
+//
+//			glVertex3f((MPoint(0.5f*r, -0.5f*r, 0.5f*r)*rM).x + offV.x, (MPoint(0.5f*r, -0.5f*r, 0.5f*r)*rM).y + offV.y, (MPoint(0.5f*r, -0.5f*r, 0.5f*r)*rM).z + offV.z);
+//			glVertex3f((MPoint(0.5f*r, 0.5f*r, 0.5f*r)*rM).x + offV.x, (MPoint(0.5f*r, 0.5f*r, 0.5f*r)*rM).y + offV.y, (MPoint(0.5f*r, 0.5f*r, 0.5f*r)*rM).z + offV.z);
+//			glVertex3f((MPoint(-0.5f*r, 0.5f*r, 0.5f*r)*rM).x + offV.x, (MPoint(-0.5f*r, 0.5f*r, 0.5f*r)*rM).y + offV.y, (MPoint(-0.5f*r, 0.5f*r, 0.5f*r)*rM).z + offV.z);
+//			glVertex3f((MPoint(-0.5f*r, -0.5f*r, 0.5f*r)*rM).x + offV.x, (MPoint(-0.5f*r, -0.5f*r, 0.5f*r)*rM).y + offV.y, (MPoint(-0.5f*r, -0.5f*r, 0.5f*r)*rM).z + offV.z);
+//			glEnd();
+//
+//			// Purple side - RIGHT
+//			glBegin(GL_TRIANGLE_FAN);
+//
+//			glVertex3f((MPoint(0.5f*r, -0.5f*r, -0.5f*r)*rM).x + offV.x, (MPoint(0.5f*r, -0.5f*r, -0.5f*r)*rM).y + offV.y, (MPoint(0.5f*r, -0.5f*r, -0.5f*r)*rM).z + offV.z);
+//			glVertex3f((MPoint(0.5f*r, 0.5f*r, -0.5f*r)*rM).x + offV.x, (MPoint(0.5f*r, 0.5f*r, -0.5f*r)*rM).y + offV.y, (MPoint(0.5f*r, 0.5f*r, -0.5f*r)*rM).z + offV.z);
+//			glVertex3f((MPoint(0.5f*r, 0.5f*r, 0.5f*r)*rM).x + offV.x, (MPoint(0.5f*r, 0.5f*r, 0.5f*r)*rM).y + offV.y, (MPoint(0.5f*r, 0.5f*r, 0.5f*r)*rM).z + offV.z);
+//			glVertex3f((MPoint(0.5f*r, -0.5f*r, 0.5f*r)*rM).x + offV.x, (MPoint(0.5f*r, -0.5f*r, 0.5f*r)*rM).y + offV.y, (MPoint(0.5f*r, -0.5f*r, 0.5f*r)*rM).z + offV.z);
+//			glEnd();
+//
+//			// Green side - LEFT
+//			glBegin(GL_TRIANGLE_FAN);
+//
+//			glVertex3f((MPoint(-0.5f*r, -0.5f*r, 0.5f*r)*rM).x + offV.x, (MPoint(-0.5f*r, -0.5f*r, 0.5f*r)*rM).y + offV.y, (MPoint(-0.5f*r, -0.5f*r, 0.5f*r)*rM).z + offV.z);
+//			glVertex3f((MPoint(-0.5f*r, 0.5f*r, 0.5f*r)*rM).x + offV.x, (MPoint(-0.5f*r, 0.5f*r, 0.5f*r)*rM).y + offV.y, (MPoint(-0.5f*r, 0.5f*r, 0.5f*r)*rM).z + offV.z);
+//			glVertex3f((MPoint(-0.5f*r, 0.5f*r, -0.5f*r)*rM).x + offV.x, (MPoint(-0.5f*r, 0.5f*r, -0.5f*r)*rM).y + offV.y, (MPoint(-0.5f*r, 0.5f*r, -0.5f*r)*rM).z + offV.z);
+//			glVertex3f((MPoint(-0.5f*r, -0.5f*r, -0.5f*r)*rM).x + offV.x, (MPoint(-0.5f*r, -0.5f*r, -0.5f*r)*rM).y + offV.y, (MPoint(-0.5f*r, -0.5f*r, -0.5f*r)*rM).z + offV.z);
+//			glEnd();
+//
+//			// Blue side - TOP
+//			glBegin(GL_TRIANGLE_FAN);
+//
+//			glVertex3f((MPoint(0.5f*r, 0.5f*r, 0.5f*r)*rM).x + offV.x, (MPoint(0.5f*r, 0.5f*r, 0.5f*r)*rM).y + offV.y, (MPoint(0.5f*r, 0.5f*r, 0.5f*r)*rM).z + offV.z);
+//			glVertex3f((MPoint(0.5f*r, 0.5f*r, -0.5f*r)*rM).x + offV.x, (MPoint(0.5f*r, 0.5f*r, -0.5f*r)*rM).y + offV.y, (MPoint(0.5f*r, 0.5f*r, -0.5f*r)*rM).z + offV.z);
+//			glVertex3f((MPoint(-0.5f*r, 0.5f*r, -0.5f*r)*rM).x + offV.x, (MPoint(-0.5f*r, 0.5f*r, -0.5f*r)*rM).y + offV.y, (MPoint(-0.5f*r, 0.5f*r, -0.5f*r)*rM).z + offV.z);
+//			glVertex3f((MPoint(-0.5f*r, 0.5f*r, 0.5f*r)*rM).x + offV.x, (MPoint(-0.5f*r, 0.5f*r, 0.5f*r)*rM).y + offV.y, (MPoint(-0.5f*r, 0.5f*r, 0.5f*r)*rM).z + offV.z);
+//			glEnd();
+//
+//			// Red side - BOTTOM
+//			glBegin(GL_TRIANGLE_FAN);
+//
+//			glVertex3f((MPoint(0.5f*r, -0.5f*r, -0.5f*r)*rM).x + offV.x, (MPoint(0.5f*r, -0.5f*r, -0.5f*r)*rM).y + offV.y, (MPoint(0.5f*r, -0.5f*r, -0.5f*r)*rM).z + offV.z);
+//			glVertex3f((MPoint(0.5f*r, -0.5f*r, 0.5f*r)*rM).x + offV.x, (MPoint(0.5f*r, -0.5f*r, 0.5f*r)*rM).y + offV.y, (MPoint(0.5f*r, -0.5f*r, 0.5f*r)*rM).z + offV.z);
+//			glVertex3f((MPoint(-0.5f*r, -0.5f*r, 0.5f*r)*rM).x + offV.x, (MPoint(-0.5f*r, -0.5f*r, 0.5f*r)*rM).y + offV.y, (MPoint(-0.5f*r, -0.5f*r, 0.5f*r)*rM).z + offV.z);
+//			glVertex3f((MPoint(-0.5f*r, -0.5f*r, -0.5f*r)*rM).x + offV.x, (MPoint(-0.5f*r, -0.5f*r, -0.5f*r)*rM).y + offV.y, (MPoint(-0.5f*r, -0.5f*r, -0.5f*r)*rM).z + offV.z);
+//			glEnd();
+//
+//			glEnd();
+//			glPopAttrib();
+//
+//		}
+//
+//		// Draw sphere
+//		if (drawPresets == 2)
+//		{
+//			int lats = 20;
+//			int longs = 20;
+//
+//			for (int i = 0; i <= lats; i++) {
+//				double lat0 = M_PI * (-0.5 + (double)(i - 1) / lats);
+//				double z0 = sin(lat0);
+//				double zr0 = cos(lat0);
+//				z0 *= r * 0.5;
+//				zr0 *= r * 0.5;
+//
+//				double lat1 = M_PI * (-0.5 + (double)i / lats);
+//				double z1 = sin(lat1);
+//				double zr1 = cos(lat1);
+//				z1 *= r * 0.5;
+//				zr1 *= r * 0.5;
+//
+//				glBegin(GL_QUAD_STRIP);
+//				for (int j = 0; j <= longs; j++)
+//				{
+//					double lng = 2 * M_PI * (double)(j - 1) / longs;
+//					double x = cos(lng);
+//					double y = sin(lng);
+//
+//					MPoint a(float(x) * float(zr0), float(y) * float(zr0), float(z0));
+//					MPoint b(float(x) * float(zr1), float(y) * float(zr1), float(z1));
+//
+//					a *= rM;
+//					b *= rM;
+//
+//					glVertex3f(float(a.x) + offV.x, float(a.y) + offV.y, float(a.z) + offV.z);
+//					glVertex3f(float(b.x) + offV.x, float(b.y) + offV.y, float(b.z) + offV.z);
+//				}
+//				glEnd();
+//
+//			}
+//
+//
+//		}
+//
+//		// Draw Cone
+//		if (drawPresets == 3)
+//		{
+//			MPoint conePoint(0.0, (r*0.5), 0.0);
+//
+//			glBegin(GL_TRIANGLE_FAN);
+//
+//			conePoint *= rM;
+//			conePoint += offV;
+//
+//			double division = 9;
+//
+//			glVertex3f(conePoint.x, conePoint.y, conePoint.z);
+//
+//			for (double angle = 0; angle < 2 * M_PI; angle += M_PI / division) {
+//				conePoint = MPoint(sin(angle) *  (r*0.5), 0.0, cos(angle) *  (r*0.5));
+//				conePoint *= rM;
+//				conePoint += offV;
+//				glVertex3f(conePoint.x, conePoint.y, conePoint.z);
+//			}
+//			glEnd();
+//
+//		}
+//
+//
+//		// Draw Rectangle
+//		if (drawPresets == 4)
+//		{
+//
+//			glBegin(GL_TRIANGLE_FAN);
+//
+//			MPoint a(-1 * (r*0.5f), 0.0, -1 * (r*0.5f));
+//			MPoint b(-1 * (r*0.5f), 0.0, (r*0.5f));
+//			MPoint c((r*0.5f), 0.0, (r*0.5f));
+//			MPoint d((r*0.5f), 0.0, -1 * (r*0.5f));
+//
+//			a *= rM;
+//			b *= rM;
+//			c *= rM;
+//			d *= rM;
+//
+//			glVertex3f(a.x + offV.x, a.y + offV.y, a.z + offV.z);
+//			glVertex3f(b.x + offV.x, b.y + offV.y, b.z + offV.z);
+//			glVertex3f(c.x + offV.x, c.y + offV.y, c.z + offV.z);
+//			glVertex3f(d.x + offV.x, d.y + offV.y, d.z + offV.z);
+//
+//			glEnd();
+//
+//
+//			glColor4d(activeLineCol.r, activeLineCol.g, activeLineCol.b, activeLineCol.a);
+//			glBegin(GL_LINE_LOOP);
+//
+//			glVertex3f(a.x + offV.x, a.y + offV.y, a.z + offV.z);
+//			glVertex3f(b.x + offV.x, b.y + offV.y, b.z + offV.z);
+//			glVertex3f(c.x + offV.x, c.y + offV.y, c.z + offV.z);
+//			glVertex3f(d.x + offV.x, d.y + offV.y, d.z + offV.z);
+//
+//			glEnd();
+//
+//			glPopAttrib();
+//
+//		}
+//
+//
+//		// Draw Drag handle
+//		if (drawPresets == 5)
+//		{
+//
+//			int division = 20;
+//
+//			MFloatPointArray points(division);
+//
+//			MTransformationMatrix rotDragMat;
+//			rotDragMat.rotateBy(rotOffEuler, MSpace::kObject);
+//			MMatrix rdM = rotDragMat.asMatrix();
+//
+//			// Draw circle
+//			glBegin(GL_TRIANGLE_FAN);
+//
+//			for (double i = 0; i < 2 * M_PI; i += M_PI / division)
+//			{
+//
+//				MPoint circlePoint = MPoint(cos(i) * (r*0.5), sin(i) * (r*0.5), 0.0);
+//				MVector circlePointVector(circlePoint);
+//
+//
+//				circlePointVector += MVector(offsetX, offsetY, offsetZ);
+//				circlePointVector *= rdM;
+//				circlePointVector -= MVector(offsetX, offsetY, offsetZ);
+//				circlePointVector += offV;
+//
+//				glVertex3d(circlePointVector.x, circlePointVector.y, circlePointVector.z);
+//
+//			}
+//
+//			glEnd();
+//
+//
+//			// Draw draghandle
+//			glBegin(GL_LINE_LOOP);
+//			glColor4d(activeLineCol.r, activeLineCol.g, activeLineCol.b, activeLineCol.a);
+//			glVertex3d(localPosX, localPosY, localPosZ);
+//			MVector endPV;
+//
+//			endPV += MVector(offsetX, offsetY - (r*0.5), offsetZ);
+//			endPV *= rdM;
+//			endPV -= MVector(offsetX, offsetY, offsetZ);
+//			endPV += offV;
+//
+//
+//			glVertex3d(endPV.x, endPV.y, endPV.z);
+//
+//			glEnd();
+//
+//			glPopAttrib();
+//
+//		}
+//
+//
+//		// Draw Icons
+//		if (drawPresets == 6 || drawPresets == 8)
+//		{
+//
+//
+//
+//			int locPointsNum;
+//			int locTrianglesNum;
+//
+//
+//
+//			MPointArray tmpA;
+//			if (drawIconType == 0) { locPointsNum = 37; locTrianglesNum = 144; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locCrossPoints[i][0], m_locCrossPoints[i][1], m_locCrossPoints[i][2])*r*rM + offV); } }
+//			if (drawIconType == 1) { locPointsNum = 26; locTrianglesNum = 261; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locBoxOpenedPoints[i][0], m_locBoxOpenedPoints[i][1], m_locBoxOpenedPoints[i][2])*r*rM + offV); } }
+//			if (drawIconType == 2) { locPointsNum = 54; locTrianglesNum = 417; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locTagPoints[i][0], m_locTagPoints[i][1], m_locTagPoints[i][2])*r*rM + offV); } }
+//			if (drawIconType == 3) { locPointsNum = 36; locTrianglesNum = 159; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locArrowUpPoints[i][0], m_locArrowUpPoints[i][1], m_locArrowUpPoints[i][2])*r*rM + offV); } }
+//			if (drawIconType == 4) { locPointsNum = 149; locTrianglesNum = 336; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locHorizontalBorderPoints[i][0], m_locHorizontalBorderPoints[i][1], m_locHorizontalBorderPoints[i][2])*r*rM + offV); } }
+//			if (drawIconType == 5) { locPointsNum = 99; locTrianglesNum = 678; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locCameraPoints[i][0], m_locCameraPoints[i][1], m_locCameraPoints[i][2])*r*rM + offV); } }
+//			if (drawIconType == 6) { locPointsNum = 37; locTrianglesNum = 216; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locClosePoints[i][0], m_locClosePoints[i][1], m_locClosePoints[i][2])*r*rM + offV); } }
+//			if (drawIconType == 7) { locPointsNum = 59; locTrianglesNum = 300; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locEyePoints[i][0], m_locEyePoints[i][1], m_locEyePoints[i][2])*r*rM + offV); } }
+//			if (drawIconType == 8) { locPointsNum = 22; locTrianglesNum = 147; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locFlashPoints[i][0], m_locFlashPoints[i][1], m_locFlashPoints[i][2])*r*rM + offV); } }
+//			if (drawIconType == 9) { locPointsNum = 44; locTrianglesNum = 279; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locTshirtPoints[i][0], m_locTshirtPoints[i][1], m_locTshirtPoints[i][2])*r*rM + offV); } }
+//			if (drawIconType == 10) { locPointsNum = 51; locTrianglesNum = 294; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locLockPoints[i][0], m_locLockPoints[i][1], m_locLockPoints[i][2])*r*rM + offV); } }
+//			if (drawIconType == 11) { locPointsNum = 147; locTrianglesNum = 870; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locGroupPoints[i][0], m_locGroupPoints[i][1], m_locGroupPoints[i][2])*r*rM + offV); } }
+//			if (drawIconType == 12) { locPointsNum = 116; locTrianglesNum = 543; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locClockPoints[i][0], m_locClockPoints[i][1], m_locClockPoints[i][2])*r*rM + offV); } }
+//			if (drawIconType == 13) { locPointsNum = 83; locTrianglesNum = 276; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locHomePoints[i][0], m_locHomePoints[i][1], m_locHomePoints[i][2])*r*rM + offV); } }
+//			if (drawIconType == 14) { locPointsNum = 60; locTrianglesNum = 285; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locMalePoints[i][0], m_locMalePoints[i][1], m_locMalePoints[i][2])*r*rM + offV); } }
+//			if (drawIconType == 15) { locPointsNum = 60; locTrianglesNum = 249; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locFemalePoints[i][0], m_locFemalePoints[i][1], m_locFemalePoints[i][2])*r*rM + offV); } }
+//			if (drawIconType == 16) { locPointsNum = 57; locTrianglesNum = 246; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locLightbulbPoints[i][0], m_locLightbulbPoints[i][1], m_locLightbulbPoints[i][2])*r*rM + offV); } }
+//			if (drawIconType == 17) { locPointsNum = 51; locTrianglesNum = 210; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locRotatecounterclockwisePoints[i][0], m_locRotatecounterclockwisePoints[i][1], m_locRotatecounterclockwisePoints[i][2])*r*rM + offV); } }
+//			if (drawIconType == 18) { locPointsNum = 46; locTrianglesNum = 183; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locPinetreePoints[i][0], m_locPinetreePoints[i][1], m_locPinetreePoints[i][2])*r*rM + offV); } }
+//			if (drawIconType == 19) { locPointsNum = 68; locTrianglesNum = 537; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locHazardPoints[i][0], m_locHazardPoints[i][1], m_locHazardPoints[i][2])*r*rM + offV); } }
+//			if (drawIconType == 20) { locPointsNum = 53; locTrianglesNum = 204; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locMovePoints[i][0], m_locMovePoints[i][1], m_locMovePoints[i][2])*r*rM + offV); } }
+//			if (drawIconType == 21) { locPointsNum = 35; locTrianglesNum = 60; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locCornersPoints[i][0], m_locCornersPoints[i][1], m_locCornersPoints[i][2])*r*rM + offV); } }
+//			if (drawIconType == 22) { locPointsNum = 35; locTrianglesNum = 138; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locDirectionPoints[i][0], m_locDirectionPoints[i][1], m_locDirectionPoints[i][2])*r*rM + offV); } }
+//			if (drawIconType == 23) { locPointsNum = 108; locTrianglesNum = 669; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locManwalkPoints[i][0], m_locManwalkPoints[i][1], m_locManwalkPoints[i][2])*r*rM + offV); } }
+//			if (drawIconType == 24) { locPointsNum = 48; locTrianglesNum = 303; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locFeetPoints[i][0], m_locFeetPoints[i][1], m_locFeetPoints[i][2])*r*rM + offV); } }
+//			if (drawIconType == 25) { locPointsNum = 56; locTrianglesNum = 181; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locmuzzleflashPoints[i][0], m_locmuzzleflashPoints[i][1], m_locmuzzleflashPoints[i][2])*r*rM + offV); } }
+//			if (drawIconType == 26) { locPointsNum = 49; locTrianglesNum = 138; for (int i = 0; i < locPointsNum; i++) { tmpA.append(MPoint(m_locOrientPoints[i][0], m_locOrientPoints[i][1], m_locOrientPoints[i][2])*r*rM + offV); } }
+//
+//			if (drawPresets == 8) { tmpA.clear(); locPointsNum = 69; locTrianglesNum = 378; tmpA.setLength(locPointsNum);  for (int i = 0; i < locPointsNum; i++) { tmpA.set(MPoint(m_CameraPoints[i][0], m_CameraPoints[i][1], m_CameraPoints[i][2])*r*rM + offV, i); } }
+//
+//			// Calculate Outline points with breaks
+//			int vC = 0;
+//			for (int i = 0; i < locPointsNum; i++)
+//			{
+//				if (tmpA[i].distanceTo(MPoint(0.0f, 0.0f, 0.0f)*r*rM + offV) == 0.0)
+//				{
+//					vC += 1;
+//				}
+//			}
+//			vector<MPointArray>	locDrawPointsB;
+//			locDrawPointsB.clear();
+//			locDrawPointsB.resize(vC + 1);
+//
+//
+//			int vB = 0;
+//			for (int i = 0; i < locPointsNum; i++)
+//			{
+//
+//				if (tmpA[i].distanceTo(MPoint(0.0f, 0.0f, 0.0f)*r*rM + offV) != 0.0)
+//				{
+//					locDrawPointsB[vB].append(tmpA[i]);
+//				}
+//
+//				if (tmpA[i].distanceTo(MPoint(0.0f, 0.0f, 0.0f)*r*rM + offV) == 0.0)
+//				{
+//					if (vB != vC)
+//					{
+//						vB += 1;
+//					}
+//
+//				}
+//
+//			}
+//
+//			// calculate Triangles
+//
+//
+//			// Calculate Polygons
+//
+//			MPointArray locDrawTriangles;
+//			locDrawTriangles.clear();
+//
+//			for (int i = 0; i < locTrianglesNum; i++)
+//			{
+//
+//
+//
+//
+//				if (drawIconType == 0) { locDrawTriangles.append(MPoint(m_locCrossTriangles[i][0] * r, m_locCrossTriangles[i][1] * r, m_locCrossTriangles[i][2] * r)*rM + offV); }
+//				if (drawIconType == 1) { locDrawTriangles.append(MPoint(m_locBoxOpenedTriangles[i][0] * r, m_locBoxOpenedTriangles[i][1] * r, m_locBoxOpenedTriangles[i][2] * r)*rM + offV); }
+//				if (drawIconType == 2) { locDrawTriangles.append(MPoint(m_locTagTriangles[i][0] * r, m_locTagTriangles[i][1] * r, m_locTagTriangles[i][2] * r)*rM + offV); }
+//				if (drawIconType == 3) { locDrawTriangles.append(MPoint(m_locArrowUpTriangles[i][0] * r, m_locArrowUpTriangles[i][1] * r, m_locArrowUpTriangles[i][2] * r)*rM + offV); }
+//				if (drawIconType == 4) { locDrawTriangles.append(MPoint(m_locHorizontalBorderTriangles[i][0] * r, m_locHorizontalBorderTriangles[i][1] * r, m_locHorizontalBorderTriangles[i][2] * r)*rM + offV); }
+//				if (drawIconType == 5) { locDrawTriangles.append(MPoint(m_locCameraTriangles[i][0] * r, m_locCameraTriangles[i][1] * r, m_locCameraTriangles[i][2] * r)*rM + offV); }
+//				if (drawIconType == 6) { locDrawTriangles.append(MPoint(m_locCloseTriangles[i][0] * r, m_locCloseTriangles[i][1] * r, m_locCloseTriangles[i][2] * r)*rM + offV); }
+//				if (drawIconType == 7) { locDrawTriangles.append(MPoint(m_locEyeTriangles[i][0] * r, m_locEyeTriangles[i][1] * r, m_locEyeTriangles[i][2] * r)*rM + offV); }
+//				if (drawIconType == 8) { locDrawTriangles.append(MPoint(m_locFlashTriangles[i][0] * r, m_locFlashTriangles[i][1] * r, m_locFlashTriangles[i][2] * r)*rM + offV); }
+//				if (drawIconType == 9) { locDrawTriangles.append(MPoint(m_locTshirtTriangles[i][0] * r, m_locTshirtTriangles[i][1] * r, m_locTshirtTriangles[i][2] * r)*rM + offV); }
+//				if (drawIconType == 10) { locDrawTriangles.append(MPoint(m_locLockTriangles[i][0] * r, m_locLockTriangles[i][1] * r, m_locLockTriangles[i][2] * r)*rM + offV); }
+//				if (drawIconType == 11) { locDrawTriangles.append(MPoint(m_locGroupTriangles[i][0] * r, m_locGroupTriangles[i][1] * r, m_locGroupTriangles[i][2] * r)*rM + offV); }
+//				if (drawIconType == 12) { locDrawTriangles.append(MPoint(m_locClockTriangles[i][0] * r, m_locClockTriangles[i][1] * r, m_locClockTriangles[i][2] * r)*rM + offV); }
+//				if (drawIconType == 13) { locDrawTriangles.append(MPoint(m_locHomeTriangles[i][0] * r, m_locHomeTriangles[i][1] * r, m_locHomeTriangles[i][2] * r)*rM + offV); }
+//				if (drawIconType == 14) { locDrawTriangles.append(MPoint(m_locMaleTriangles[i][0] * r, m_locMaleTriangles[i][1] * r, m_locMaleTriangles[i][2] * r)*rM + offV); }
+//				if (drawIconType == 15) { locDrawTriangles.append(MPoint(m_locFemaleTriangles[i][0] * r, m_locFemaleTriangles[i][1] * r, m_locFemaleTriangles[i][2] * r)*rM + offV); }
+//				if (drawIconType == 16) { locDrawTriangles.append(MPoint(m_locLightbulbTriangles[i][0] * r, m_locLightbulbTriangles[i][1] * r, m_locLightbulbTriangles[i][2] * r)*rM + offV); }
+//				if (drawIconType == 17) { locDrawTriangles.append(MPoint(m_locRotatecounterclockwiseTriangles[i][0] * r, m_locRotatecounterclockwiseTriangles[i][1] * r, m_locRotatecounterclockwiseTriangles[i][2] * r)*rM + offV); }
+//				if (drawIconType == 18) { locDrawTriangles.append(MPoint(m_locPinetreeTriangles[i][0] * r, m_locPinetreeTriangles[i][1] * r, m_locPinetreeTriangles[i][2] * r)*rM + offV); }
+//				if (drawIconType == 19) { locDrawTriangles.append(MPoint(m_locHazardTriangles[i][0] * r, m_locHazardTriangles[i][1] * r, m_locHazardTriangles[i][2] * r)*rM + offV); }
+//				if (drawIconType == 20) { locDrawTriangles.append(MPoint(m_locMoveTriangles[i][0] * r, m_locMoveTriangles[i][1] * r, m_locMoveTriangles[i][2] * r)*rM + offV); }
+//				if (drawIconType == 21) { locDrawTriangles.append(MPoint(m_locCornersTriangles[i][0] * r, m_locCornersTriangles[i][1] * r, m_locCornersTriangles[i][2] * r)*rM + offV); }
+//				if (drawIconType == 22) { locDrawTriangles.append(MPoint(m_locDirectionTriangles[i][0] * r, m_locDirectionTriangles[i][1] * r, m_locDirectionTriangles[i][2] * r)*rM + offV); }
+//				if (drawIconType == 23) { locDrawTriangles.append(MPoint(m_locManwalkTriangles[i][0] * r, m_locManwalkTriangles[i][1] * r, m_locManwalkTriangles[i][2] * r)*rM + offV); }
+//				if (drawIconType == 24) { locDrawTriangles.append(MPoint(m_locFeetTriangles[i][0] * r, m_locFeetTriangles[i][1] * r, m_locFeetTriangles[i][2] * r)*rM + offV); }
+//				if (drawIconType == 25) { locDrawTriangles.append(MPoint(m_locmuzzleflashTriangles[i][0] * r, m_locmuzzleflashTriangles[i][1] * r, m_locmuzzleflashTriangles[i][2] * r)*rM + offV); }
+//				if (drawIconType == 26) { locDrawTriangles.append(MPoint(m_locOrientTiangles[i][0] * r, m_locOrientTiangles[i][1] * r, m_locOrientTiangles[i][2] * r)*rM + offV); }
+//			}
+//
+//			if (drawPresets == 8)
+//			{
+//
+//				locDrawTriangles.clear();
+//
+//				for (int i = 0; i < locTrianglesNum; i++)
+//				{
+//					locDrawTriangles.append(MPoint(m_CameraTiangles[i][0] * r, m_CameraTiangles[i][1] * r, m_CameraTiangles[i][2] * r)*rM + offV);
+//				}
+//
+//			}
+//
+//			// Draw the icons
+//
+//			//glPopAttrib();
+//
+//			int co = 0;
+//
+//			glBegin(GL_TRIANGLES);
+//
+//			for (int i = 0; i < (locDrawTriangles.length() / 3); i++)
+//			{
+//
+//
+//				glVertex3d(locDrawTriangles[co].x, locDrawTriangles[co].y, locDrawTriangles[co].z);
+//				glVertex3d(locDrawTriangles[co + 1].x, locDrawTriangles[co + 1].y, locDrawTriangles[co + 1].z);
+//				glVertex3d(locDrawTriangles[co + 2].x, locDrawTriangles[co + 2].y, locDrawTriangles[co + 2].z);
+//
+//
+//
+//				co += 3;
+//
+//			}
+//
+//			glEnd();
+//
+//			glColor4d(activeLineCol.r, activeLineCol.g, activeLineCol.b, activeLineCol.a);
+//			for (int i = 0; i < locDrawPointsB.size(); i++)
+//			{
+//				glBegin(GL_LINE_LOOP);
+//				for (unsigned int z = 0; z < locDrawPointsB[i].length(); z++)
+//				{
+//					glVertex3d(locDrawPointsB[i][z].x, locDrawPointsB[i][z].y, locDrawPointsB[i][z].z);
+//				}
+//				glEnd();
+//
+//			}
+//
+//
+//
+//
+//		}
+//
+//
+//
+//		// Draw Gyroscope
+//		if (drawPresets == 7)
+//		{
+//
+//			int division = 50;
+//
+//			MFloatPointArray points(division);
+//
+//			glBegin(GL_LINE_LOOP);
+//			glColor4d(activeLineCol.r, activeLineCol.g + 1.0, activeLineCol.b, activeLineCol.a);
+//			for (double i = 0; i < 2 * M_PI; i += M_PI / division)
+//			{
+//				MPoint circlePoint = MPoint(cos(i) * (r*0.5), 0.0, sin(i) * (r*0.5));
+//				circlePoint *= rM;
+//				MVector circlePointVector(circlePoint);
+//				circlePointVector += offV;
+//
+//
+//				glVertex3d(circlePointVector.x, circlePointVector.y, circlePointVector.z);
+//			}
+//
+//			glEnd();
+//
+//
+//
+//			glBegin(GL_LINE_LOOP);
+//			glColor4d(activeLineCol.r + 1.0, activeLineCol.g, activeLineCol.b, activeLineCol.a);
+//			for (double i = 0; i < 2 * M_PI; i += M_PI / division)
+//			{
+//				MPoint circlePoint = MPoint(0.0, cos(i) * (r*0.5), sin(i) * (r*0.5));
+//				circlePoint *= rM;
+//				MVector circlePointVector(circlePoint);
+//				circlePointVector += offV;
+//
+//
+//				glVertex3d(circlePointVector.x, circlePointVector.y, circlePointVector.z);
+//			}
+//			glEnd();
+//
+//
+//
+//			glBegin(GL_LINE_LOOP);
+//			glColor4d(activeLineCol.r, activeLineCol.g, activeLineCol.b + 1.0, activeLineCol.a);
+//			for (double i = 0; i < 2 * M_PI; i += M_PI / division)
+//			{
+//				MPoint circlePoint = MPoint(cos(i) * (r*0.5), sin(i) * (r*0.5), 0.0);
+//				circlePoint *= rM;
+//				MVector circlePointVector(circlePoint);
+//				circlePointVector += offV;
+//
+//
+//				glVertex3d(circlePointVector.x, circlePointVector.y, circlePointVector.z);
+//			}
+//			glEnd();
+//
+//
+//
+//
+//			glPopAttrib();
+//
+//		}
+//
+//
+//		if (drawPresets == 9)
+//		{
+//
+//
+//			glPointSize(5);
+//			glColor3d(1.0, 1.0, 0.0);
+//			glBegin(GL_POINTS);
+//			glVertex3d(0.0, 0.0, 0.0);
+//			glEnd();
+//			glPopAttrib();
+//		}
+//
+//		// Draw A-B
+//		if (drawPresets == 10)
+//		{
+//
+//			glBegin(GL_LINE_LOOP);
+//
+//			MPoint a = inLocA_pos;
+//			MPoint b = inLocB_pos;
+//
+//			a *= rM;
+//			b *= rM;
+//
+//			glVertex3d(a.x, a.y, a.z);
+//			glVertex3d(b.x, b.y, b.z);
+//
+//			glEnd();
+//			glPopAttrib();
+//
+//		}
+//
+//
+//		glPopAttrib();
+//
+//
+//	}
+//	view.endGL();
+//
+//#endif
 }
 
 bool BaseLoc::isBounded() const
@@ -1207,10 +1208,10 @@ MBoundingBox BaseLoc::boundingBox() const
 	MPoint inLocA_pos = inLocA_posMat.getTranslation(MSpace::kWorld);
 	MPoint inLocB_pos = inLocB_posMat.getTranslation(MSpace::kWorld);
 
-	// Get allways face camera
-	p = MPlug(thisNode, aDispCard);
-	bool b_faceCam;
-	p.getValue(b_faceCam);
+	//// Get allways face camera
+	//p = MPlug(thisNode, aDispCard);
+	//bool b_faceCam;
+	//p.getValue(b_faceCam);
 
 
 	// Get Local position of the Shape node
@@ -1369,26 +1370,26 @@ MBoundingBox BaseLoc::boundingBox() const
 	}
 
 
-	if (b_faceCam)
-	{
-		corner1 = MPoint(-1.0, 0.0, -1.0);
-		corner2 = MPoint(1.0, 0.0, 1.0);
+	//if (b_faceCam)
+	//{
+	//	corner1 = MPoint(-1.0, 0.0, -1.0);
+	//	corner2 = MPoint(1.0, 0.0, 1.0);
 
 
 
-		corner1 = corner1 * multiplier;
-		corner2 = corner2 * multiplier;
+	//	corner1 = corner1 * multiplier;
+	//	corner2 = corner2 * multiplier;
 
-		corner1 *= rM;
-		corner2 *= rM;
+	//	corner1 *= rM;
+	//	corner2 *= rM;
 
-		corner1 *= m_modelViewMat.inverse();
-		corner2 *= m_modelViewMat.inverse();
+	//	corner1 *= m_modelViewMat.inverse();
+	//	corner2 *= m_modelViewMat.inverse();
 
 
-		corner1 += offV;
-		corner2 += offV;
-	}
+	//	corner1 += offV;
+	//	corner2 += offV;
+	//}
 
 
 	// IF file is selected as preset return the read BB corners immediately
@@ -1586,9 +1587,9 @@ MBoundingBox BaseLocOverride::boundingBox(const MDagPath& objPath, const MDagPat
 
 
 	// Get allways face camera
-	p = MPlug(o_BaseLocNode, BaseLoc::aDispCard);
-	bool dispCard;
-	p.getValue(dispCard);
+	p = MPlug(o_BaseLocNode, BaseLoc::aBillboard);
+	bool billboard;
+	p.getValue(billboard);
 
 	//// Get Local position of the Shape node
 	//// Get local Pos X
@@ -1705,6 +1706,36 @@ MBoundingBox BaseLocOverride::boundingBox(const MDagPath& objPath, const MDagPat
 
 	MMatrix rM = rotOffTMatrix.asMatrix();
 
+	if (billboard)
+	{
+		MMatrix worldMatrix = objPath.inclusiveMatrix();
+
+		// Remove translate
+		worldMatrix[3][0] = 0.0;
+		worldMatrix[3][1] = 0.0;
+		worldMatrix[3][2] = 0.0;
+
+		// Get Camera Matrix
+		MMatrix camMatrix = cameraPath.inclusiveMatrix();
+
+		// Remove Translate
+		camMatrix[3][0] = 0.0;
+		camMatrix[3][1] = 0.0;
+		camMatrix[3][2] = 0.0;
+
+		MMatrix billboardMat = camMatrix * worldMatrix.inverse();
+		MTransformationMatrix mf_bbMatrix(billboardMat);
+
+		MEulerRotation facing_angle = MEulerRotation(-90.0 * (M_PI / 180.0), 0.0, 0.0);
+
+		if (drawPresets == 3 || drawPresets == 5) { facing_angle = MEulerRotation(0.0, 0.0, 0.0); }
+		if (drawPresets == 8) { facing_angle = MEulerRotation(0.0, -90.0 * (M_PI / 180.0), 0.0); }
+
+		mf_bbMatrix.rotateBy(facing_angle, MSpace::kObject);
+
+		rM = mf_bbMatrix.asMatrix();
+	}
+
 	MMatrix rM_loc = objPath.exclusiveMatrix();
 
 
@@ -1795,26 +1826,26 @@ MBoundingBox BaseLocOverride::boundingBox(const MDagPath& objPath, const MDagPat
 		//corner2 += MVector(localPosX, localPosY, localPosZ);
 	}
 
-	if (dispCard)
-	{
-		corner1 = MPoint(-0.5 * scaleX, -0.5 * scaleY, 0.5 * scaleZ);
-		corner2 = MPoint(0.5* scaleX, 0.5* scaleY, -0.5* scaleZ);
+	//if (dispCard)
+	//{
+	//	corner1 = MPoint(-0.5 * scaleX, -0.5 * scaleY, 0.5 * scaleZ);
+	//	corner2 = MPoint(0.5* scaleX, 0.5* scaleY, -0.5* scaleZ);
 
 
 
-		corner1 = corner1 * multiplier;
-		corner2 = corner2 * multiplier;
+	//	corner1 = corner1 * multiplier;
+	//	corner2 = corner2 * multiplier;
 
-		corner1 *= rM;
-		corner2 *= rM;
+	//	corner1 *= rM;
+	//	corner2 *= rM;
 
-		corner1 *= m_modelViewMat.inverse();
-		corner2 *= m_modelViewMat.inverse();
+	//	corner1 *= m_modelViewMat.inverse();
+	//	corner2 *= m_modelViewMat.inverse();
 
 
-		corner1 += offV;
-		corner2 += offV;
-	}
+	//	corner1 += offV;
+	//	corner2 += offV;
+	//}
 
 
 	// IF file is selected as preset return the read BB corners immediately
@@ -2018,7 +2049,7 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 {
 
 
-
+	
 
 	// Get outside data from plugs
 	MStatus status;
@@ -2043,7 +2074,6 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 
 	if (status)
 	{
-
 
 
 		// Get input point array
@@ -2372,13 +2402,17 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 		p = MPlug(o_BaseLocNode, BaseLoc::aDispNum);
 		p.getValue(data->m_dispNum);
 
-		// Get Display as Cards plug
-		p = MPlug(o_BaseLocNode, BaseLoc::aDispCard);
-		p.getValue(data->m_dispCard);
+		//// Get Display as Cards plug
+		//p = MPlug(o_BaseLocNode, BaseLoc::aDispCard);
+		//p.getValue(data->m_dispCard);
 
-		// Get Display locators plug
+		// Get drawontop locators plug
 		p = MPlug(o_BaseLocNode, BaseLoc::aDrawOnTop);
 		p.getValue(data->m_drawOnTop);
+
+		// Get billboard locators plug
+		p = MPlug(o_BaseLocNode, BaseLoc::aBillboard);
+		p.getValue(data->m_billboard);
 
 		// Get Display locators plug
 		p = MPlug(o_BaseLocNode, BaseLoc::aDispLoc);
@@ -2495,6 +2529,7 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 		// Get input text
 		p = MPlug(o_BaseLocNode, BaseLoc::aText);
 		data->m_text = MString() + p.asString();
+
 
 
 		// Get debug types
@@ -2690,6 +2725,37 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 
 	}
 
+	if (data->m_billboard)
+	{
+		MMatrix worldMatrix = objPath.inclusiveMatrix();
+
+		// Remove translate
+		worldMatrix[3][0] = 0.0;
+		worldMatrix[3][1] = 0.0;
+		worldMatrix[3][2] = 0.0;
+
+		// Get Camera Matrix
+		MMatrix camMatrix = cameraPath.inclusiveMatrix();
+
+		// Remove Translate
+		camMatrix[3][0] = 0.0;
+		camMatrix[3][1] = 0.0;
+		camMatrix[3][2] = 0.0;
+
+		MMatrix billboardMat = camMatrix * worldMatrix.inverse();
+		MTransformationMatrix mf_bbMatrix(billboardMat);
+
+		MEulerRotation facing_angle = MEulerRotation(-90.0 * (M_PI / 180.0), 0.0, 0.0);
+
+		if (data->m_drawPresets == 3 || data->m_drawPresets == 5){ facing_angle = MEulerRotation(0.0, 0.0, 0.0); }
+		if (data->m_drawPresets == 8) { facing_angle = MEulerRotation(0.0, -90.0 * (M_PI / 180.0), 0.0); }
+
+		mf_bbMatrix.rotateBy(facing_angle, MSpace::kObject);
+
+		data->m_bilboardMatrix = mf_bbMatrix.asMatrix();
+	}
+
+
 	// Calculate rotation
 	MEulerRotation rotOffEuler(data->m_rotateX * (M_PI / 180.0), data->m_rotateY * (M_PI / 180.0), data->m_rotateZ * (M_PI / 180.0), MEulerRotation::kXYZ);
 	MTransformationMatrix rotOffTMatrix;
@@ -2703,17 +2769,23 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 	//MGlobal::displayInfo(MString() + BaseLoc::localPositionX. );
 
 	MMatrix rM = rotOffTMatrix.asMatrix();
+
+	if (data->m_billboard)
+	{
+		rM = data->m_bilboardMatrix;
+	}
+
 	data->m_rotMatrix = rM;
 
 	// Clear Polygon and outland data arrays
 	data->m_locDrawPoints.clear();
-	data->m_locDrawPoints_mirror.clear();
+	//data->m_locDrawPoints_mirror.clear();
 
 	data->m_locDrawTriangles.clear();
-	data->m_locDrawTriangles_mirror.clear();
+	//data->m_locDrawTriangles_mirror.clear();
 
 	data->m_locDrawPointsA.clear();
-	data->m_locDrawPointsA_mirror.clear();
+	//data->m_locDrawPointsA_mirror.clear();
 
 	double r = data->m_radius;
 
@@ -2759,10 +2831,10 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 		if (data->m_drawIconType == 26) { m_locPointsNum = 49; m_locTrianglesNum = 138; tmpA.setLength(m_locPointsNum);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(m_locOrientPoints[i][0], m_locOrientPoints[i][1], m_locOrientPoints[i][2])*r*rM + offV, i); } }
 
 		// camera
-		if (data->m_drawPresets == 8) { tmpA.clear(); m_locPointsNum = 69; m_locTrianglesNum = 378; tmpA.setLength(m_locPointsNum);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(m_CameraPoints[i][0], m_CameraPoints[i][1], m_CameraPoints[i][2])*r*rM + offV, i); } }
+		if (data->m_drawPresets == 8) { tmpA.clear(); m_locPointsNum = (sizeof(m_CameraPoints) / sizeof(float) / 3); m_locTrianglesNum=(sizeof(m_CameraTiangles) / sizeof(float) / 3); tmpA.setLength(m_locPointsNum);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(m_CameraPoints[i][0], m_CameraPoints[i][1], m_CameraPoints[i][2])*r*rM + offV, i); } }
 
 		// box
-		if (data->m_drawPresets == 1) { tmpA.clear(); m_locPointsNum = 20; m_locTrianglesNum = 36; tmpA.setLength(m_locPointsNum);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(m_locBoxPoints[i][0], m_locBoxPoints[i][1], m_locBoxPoints[i][2])*r*rM + offV, i); } }
+		if (data->m_drawPresets == 1) { tmpA.clear(); m_locPointsNum = (sizeof(m_locBoxPoints) / sizeof(float) / 3); m_locTrianglesNum=(sizeof(m_locBoxTriangles) / sizeof(float) / 3);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(m_locBoxPoints[i][0], m_locBoxPoints[i][1], m_locBoxPoints[i][2])*r*rM + offV, i); } }
 
 		// file
 		if (data->m_drawPresets == 11) { tmpA.clear(); m_locPointsNum = inPointArray.length(); m_locTrianglesNum = inTriangleArray.length(); tmpA.setLength(m_locPointsNum);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(inPointArray[i][0], inPointArray[i][1], inPointArray[i][2])*r*rM + offV, i); } }
@@ -2780,9 +2852,6 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 		}
 
 		data->m_locDrawPointsA.resize(vC + 1);
-
-
-
 
 		int vB = 0;
 		for (int i = 0; i < m_locPointsNum; i++)
@@ -2892,8 +2961,10 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 	if (data->m_drawPresets == 0)
 	{
 
+		MPoint lastL;
+
 		data->m_locDrawPoints.clear();
-		int division = 50;
+		int division = 21;
 
 		for (double i = 0; i < 2 * M_PI; i += M_PI / division)
 		{
@@ -2901,8 +2972,13 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 			circlePoint *= rM;
 			MVector circlePointVector(circlePoint);
 
-			data->m_locDrawPoints.append(circlePointVector + offV);
+			lastL = circlePointVector + offV;
+			data->m_locDrawPoints.append(lastL);
 
+			if (i != 0)
+			{
+				data->m_locDrawPoints.append(lastL);
+			}
 		}
 
 
@@ -2910,8 +2986,14 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 		//
 		data->m_locDrawTriangles.clear();
 
+
+		MPoint lastP;
+
 		for (double i = 0; i < 2 * M_PI; i += M_PI / division)
 		{
+		
+			
+
 			MPoint circlePoint = MPoint(cos(i) * (r*0.5), 0.0, sin(i) * (r*0.5));
 
 			circlePoint *= rM;
@@ -2920,11 +3002,18 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 			MPoint centerP(MPoint::origin);
 			centerP *= rM;
 
-			data->m_locDrawTriangles.append(circlePointVector + offV);
+			lastP = circlePointVector + offV;
+
+			data->m_locDrawTriangles.append(lastP);
 			data->m_locDrawTriangles.append(centerP + offV);
 
+			if (i != 0)
+			{
+				data->m_locDrawTriangles.append(lastP);
+			}
 
 		}
+
 
 	}
 
@@ -2955,44 +3044,57 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 		data->m_locDrawTriangles.clear();
 
 
-		int lats = 20;
-		int longs = 20;
 
-		for (int i = 0; i <= lats; i++) {
-			double lat0 = M_PI * (-0.5 + (double)(i - 1) / lats);
-			double z0 = sin(lat0);
-			double zr0 = cos(lat0);
-			z0 *= r * 0.5;
-			zr0 *= r * 0.5;
-
-			double lat1 = M_PI * (-0.5 + (double)i / lats);
-			double z1 = sin(lat1);
-			double zr1 = cos(lat1);
-			z1 *= r * 0.5;
-			zr1 *= r * 0.5;
-
-			for (int j = 0; j <= longs; j++)
-			{
-				double lng = 2 * M_PI * (double)(j - 1) / longs;
-				double x = cos(lng);
-				double y = sin(lng);
-
-				MPoint a(float(x) * float(zr0), float(y) * float(zr0), float(z0));
-				MPoint b(float(x) * float(zr1), float(y) * float(zr1), float(z1));
-
-				a *= rM;
-				b *= rM;
-
-				data->m_locDrawTriangles.append(float(a.x) + offV.x, float(a.y) + offV.y, float(a.z) + offV.z);
-				data->m_locDrawTriangles.append(float(b.x) + offV.x, float(b.y) + offV.y, float(b.z) + offV.z);
-
-
-
-
-			}
-
+		for (int i = 0; i < (sizeof(m_locSphereTriangles) / sizeof(float) / 3); i++)
+		{
+			data->m_locDrawTriangles.append(MPoint(m_locSphereTriangles[i][0] * r, m_locSphereTriangles[i][1] * r, m_locSphereTriangles[i][2] * r) * rM + offV);
 
 		}
+	
+
+		//int lats = 20;
+		//int longs = 20;
+
+		//MPoint lastPA, lastPB;
+
+		//for (int i = 0; i <= lats; i++) {
+		//	double lat0 = M_PI * (-0.5 + (double)(i - 1) / lats);
+		//	double z0 = sin(lat0);
+		//	double zr0 = cos(lat0);
+		//	z0 *= r * 0.5;
+		//	zr0 *= r * 0.5;
+
+		//	double lat1 = M_PI * (-0.5 + (double)i / lats);
+		//	double z1 = sin(lat1);
+		//	double zr1 = cos(lat1);
+		//	z1 *= r * 0.5;
+		//	zr1 *= r * 0.5;
+
+		//	for (int j = 0; j <= longs; j++)
+		//	{
+		//		double lng = 2 * M_PI * (double)(j - 1) / longs;
+		//		double x = cos(lng);
+		//		double y = sin(lng);
+
+		//		MPoint a(float(x) * float(zr0), float(y) * float(zr0), float(z0));
+		//		MPoint b(float(x) * float(zr1), float(y) * float(zr1), float(z1));
+
+		//		a *= rM;
+		//		b *= rM;
+
+		//		lastPA = MPoint(float(a.x) + offV.x, float(a.y) + offV.y, float(a.z) + offV.z);
+		//		lastPB = MPoint(float(b.x) + offV.x, float(b.y) + offV.y, float(b.z) + offV.z);
+
+		//		data->m_locDrawTriangles.append(lastPA);
+		//		data->m_locDrawTriangles.append(lastPB);
+
+		//	}
+
+
+		//}
+
+	
+
 
 	}
 
@@ -3017,9 +3119,15 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 
 		data->m_locDrawPoints.append(a.x + offV.x, a.y + offV.y, a.z + offV.z);
 		data->m_locDrawPoints.append(b.x + offV.x, b.y + offV.y, b.z + offV.z);
+
 		data->m_locDrawPoints.append(c.x + offV.x, c.y + offV.y, c.z + offV.z);
 		data->m_locDrawPoints.append(d.x + offV.x, d.y + offV.y, d.z + offV.z);
+
 		data->m_locDrawPoints.append(a.x + offV.x, a.y + offV.y, a.z + offV.z);
+		data->m_locDrawPoints.append(d.x + offV.x, d.y + offV.y, d.z + offV.z);
+
+		data->m_locDrawPoints.append(b.x + offV.x, b.y + offV.y, b.z + offV.z);
+		data->m_locDrawPoints.append(c.x + offV.x, c.y + offV.y, c.z + offV.z);
 
 		data->m_locDrawTriangles.append(a.x + offV.x, a.y + offV.y, a.z + offV.z);
 		data->m_locDrawTriangles.append(b.x + offV.x, b.y + offV.y, b.z + offV.z);
@@ -3051,16 +3159,21 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 
 		MPoint conePoint_top = conePoint;
 
+		MPoint lastP;
+
 		for (double angle = 0; angle < 2 * M_PI; angle += M_PI / division) {
 			conePoint = MPoint(sin(angle) *  (r*0.5), 0.0, cos(angle) *  (r*0.5));
 			conePoint *= rM;
 
+			lastP = conePoint + offV;
+
 			data->m_locDrawTriangles.append(conePoint + offV);
-
-
-
 			data->m_locDrawTriangles.append(conePoint_top);
 
+			if (angle != 0)
+			{
+				data->m_locDrawTriangles.append(lastP);
+			}
 		}
 
 	}
@@ -3108,10 +3221,6 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 			MVector circlePointVector(circlePoint);
 
 			data->m_locDrawPointsA[1].append(circlePointVector + offV);
-
-
-
-
 		}
 
 
@@ -3138,43 +3247,43 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 
 
 
-	MMatrix mirror_mat;
+	//MMatrix mirror_mat;
 
 
-	if (data->m_mirror_x)
-	{
-		double mtx[4][4] = { -1, 0, 0, 0,
-			0, 1, 0, 0,
-			0, 0, 1, 0,
-			0, 0, 0, 1 };
+	//if (data->m_mirror_x)
+	//{
+	//	double mtx[4][4] = { -1, 0, 0, 0,
+	//		0, 1, 0, 0,
+	//		0, 0, 1, 0,
+	//		0, 0, 0, 1 };
 
-		mirror_mat = MMatrix(mtx);
+	//	mirror_mat = MMatrix(mtx);
 
-	}
+	//}
 
-	if (data->m_mirror_y)
-	{
-		double mtx[4][4] = { 1, 0, 0, 0,
-			0, -1, 0, 0,
-			0, 0, 1, 0,
-			0, 0, 0, 1 };
+	//if (data->m_mirror_y)
+	//{
+	//	double mtx[4][4] = { 1, 0, 0, 0,
+	//		0, -1, 0, 0,
+	//		0, 0, 1, 0,
+	//		0, 0, 0, 1 };
 
-		mirror_mat = MMatrix(mtx);
+	//	mirror_mat = MMatrix(mtx);
 
-	}
+	//}
 
-	if (data->m_mirror_z)
-	{
-		double mtx[4][4] = { 1, 0, 0, 0,
-			0, 1, 0, 0,
-			0, 0, -1, 0,
-			0, 0, 0, 1 };
+	//if (data->m_mirror_z)
+	//{
+	//	double mtx[4][4] = { 1, 0, 0, 0,
+	//		0, 1, 0, 0,
+	//		0, 0, -1, 0,
+	//		0, 0, 0, 1 };
 
-		mirror_mat = MMatrix(mtx);
+	//	mirror_mat = MMatrix(mtx);
 
-	}
+	//}
 
-	if (data->m_mirror_x || data->m_mirror_y || data->m_mirror_z)
+	/*if (data->m_mirror_x || data->m_mirror_y || data->m_mirror_z)
 	{
 
 		data->m_locDrawPointsA_mirror.resize(data->m_locDrawPointsA.size());
@@ -3211,7 +3320,7 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 			mirrPoint *= mirror_mat;
 			data->m_locDrawPoints_mirror.append(mirrPoint);
 		}
-	}
+	}*/
 
 
 	// Add locator Center point
@@ -3234,33 +3343,20 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 		return;
 	}
 
-	int apiVer = MGlobal::apiVersion();
+	//int apiVer = MGlobal::apiVersion();
 
 
-
-#if MAYA_API_VERSION > 201600
-	if (pLocatorData->m_drawOnTop)
-	{
-		drawManager.beginDrawable();
-		drawManager.beginDrawInXray();
-	}
-	if (!pLocatorData->m_drawOnTop)
-	{
-		drawManager.beginDrawable();
-	}
-
-#else
 	drawManager.beginDrawable();
 
-#endif
+	if (pLocatorData->m_drawOnTop)
+	{
+		drawManager.beginDrawInXray();
+	}
 
 
 	if (pLocatorData->m_dispLoc)
 	{
 
-
-
-		//drawManager.mesh(MHWRender::MUIDrawManager::kClosedLine, pLocatorData->m_locDrawPoints);
 
 		// Icon Names
 
@@ -3318,7 +3414,7 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 		// IK // 
 		// FK //
 
-		drawManager.setDepthPriority(7);
+		//drawManager.setDepthPriority(7);
 
 
 		// Offset
@@ -3355,18 +3451,7 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 		fillCol = MColor(pLocatorData->m_polygonColor.r, pLocatorData->m_polygonColor.g, pLocatorData->m_polygonColor.b, pLocatorData->m_polygonAlpha);
 		lineCol = MColor(pLocatorData->m_lineColor.r, pLocatorData->m_lineColor.g, pLocatorData->m_lineColor.b, pLocatorData->m_lineAlpha);
 
-		//if (MHWRender::MGeometryUtilities::displayStatus(objPath) == M3dView::kDormant) {
-		//	fillCol = MColor(pLocatorData->m_polygonColor.r, pLocatorData->m_polygonColor.g, pLocatorData->m_polygonColor.b, pLocatorData->m_polygonAlpha);
-		//	lineCol = MColor(pLocatorData->m_lineColor.r, pLocatorData->m_lineColor.g, pLocatorData->m_lineColor.b, pLocatorData->m_lineAlpha);
-		//}
-
-		//if (frameContext.getDisplayStyle() & MHWRender::MDrawContext::kWireFrame) {
-
-
-		//	fillCol = MColor(pLocatorData->m_locColor.r, pLocatorData->m_locColor.g, pLocatorData->m_locColor.b, 0.0);
-		//	lineCol = MColor(pLocatorData->m_locColor.r, pLocatorData->m_locColor.g, pLocatorData->m_locColor.b, pLocatorData->m_lineAlpha);
-		//}
-
+	
 		if (MHWRender::MGeometryUtilities::displayStatus(objPath) == M3dView::kLead) {
 
 
@@ -3418,29 +3503,30 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 		}
 
 
+
 		// Draw Circle
 		if (pLocatorData->m_drawPresets == 0)
 		{
 
 
-			if (pLocatorData->m_dispCard)
+	/*		if (pLocatorData->m_dispCard)
 			{
 				vU = MVector(0.0, 0.0, 1.0);
 				vU *= frameContext.getMatrix(MHWRender::MFrameContext::kViewInverseMtx);
-			}
+			}*/
 
 
 			if (drawFill)
 			{
 				// Draw fill
 				drawManager.setColor(fillCol);
-				drawManager.mesh(MHWRender::MUIDrawManager::kTriStrip, pLocatorData->m_locDrawTriangles);
+				drawManager.mesh(MHWRender::MUIDrawManager::kTriangles, pLocatorData->m_locDrawTriangles);
 
 
-				if (pLocatorData->m_mirror_x || pLocatorData->m_mirror_y || pLocatorData->m_mirror_z)
+		/*		if (pLocatorData->m_mirror_x || pLocatorData->m_mirror_y || pLocatorData->m_mirror_z)
 				{
-					drawManager.mesh(MHWRender::MUIDrawManager::kTriStrip, pLocatorData->m_locDrawTriangles_mirror);
-				}
+					drawManager.mesh(MHWRender::MUIDrawManager::kTriangles, pLocatorData->m_locDrawTriangles_mirror);
+				}*/
 
 			}
 
@@ -3448,13 +3534,13 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 			// Draw outline
 			drawManager.setColor(lineCol);
 			drawManager.setLineWidth(pLocatorData->m_lineWidth);
-			drawManager.mesh(MHWRender::MUIDrawManager::kLineStrip, pLocatorData->m_locDrawPoints);
+			drawManager.mesh(MHWRender::MUIDrawManager::kLines, pLocatorData->m_locDrawPoints);
 
 
-			if (pLocatorData->m_mirror_x || pLocatorData->m_mirror_y || pLocatorData->m_mirror_z)
-			{
-				drawManager.mesh(MHWRender::MUIDrawManager::kLineStrip, pLocatorData->m_locDrawPoints_mirror);
-			}
+			//if (pLocatorData->m_mirror_x || pLocatorData->m_mirror_y || pLocatorData->m_mirror_z)
+			//{
+			//	drawManager.mesh(MHWRender::MUIDrawManager::kLines, pLocatorData->m_locDrawPoints_mirror);
+			//}
 
 
 
@@ -3471,10 +3557,10 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 				drawManager.mesh(MHWRender::MUIDrawManager::kTriangles, pLocatorData->m_locDrawTriangles);
 
 
-				if (pLocatorData->m_mirror_x || pLocatorData->m_mirror_y || pLocatorData->m_mirror_z)
+		/*		if (pLocatorData->m_mirror_x || pLocatorData->m_mirror_y || pLocatorData->m_mirror_z)
 				{
 					drawManager.mesh(MHWRender::MUIDrawManager::kTriangles, pLocatorData->m_locDrawTriangles_mirror);
-				}
+				}*/
 
 
 
@@ -3487,19 +3573,19 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 
 			for (int i = 0; i < pLocatorData->m_locDrawPointsA.size(); i++)
 			{
-				drawManager.mesh(MHWRender::MUIDrawManager::kLineStrip, pLocatorData->m_locDrawPointsA[i]);
+				drawManager.mesh(MHWRender::MUIDrawManager::kLines, pLocatorData->m_locDrawPointsA[i]);
 
 			}
 
 
 
-			if (pLocatorData->m_mirror_x || pLocatorData->m_mirror_y || pLocatorData->m_mirror_z)
-			{
-				for (int i = 0; i < pLocatorData->m_locDrawPointsA.size(); i++)
-				{
-					drawManager.mesh(MHWRender::MUIDrawManager::kLineStrip, pLocatorData->m_locDrawPointsA_mirror[i]);
-				}
-			}
+			//if (pLocatorData->m_mirror_x || pLocatorData->m_mirror_y || pLocatorData->m_mirror_z)
+			//{
+			//	for (int i = 0; i < pLocatorData->m_locDrawPointsA.size(); i++)
+			//	{
+			//		drawManager.mesh(MHWRender::MUIDrawManager::kLines, pLocatorData->m_locDrawPointsA_mirror[i]);
+			//	}
+			//}
 
 
 
@@ -3514,12 +3600,12 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 
 			// Draw fill
 			drawManager.setColor(fillCol);
-			drawManager.mesh(MHWRender::MUIDrawManager::kTriStrip, pLocatorData->m_locDrawTriangles);
+			drawManager.mesh(MHWRender::MUIDrawManager::kTriangles, pLocatorData->m_locDrawTriangles);
 
-			if (pLocatorData->m_mirror_x || pLocatorData->m_mirror_y || pLocatorData->m_mirror_z)
+	/*		if (pLocatorData->m_mirror_x || pLocatorData->m_mirror_y || pLocatorData->m_mirror_z)
 			{
 				drawManager.mesh(MHWRender::MUIDrawManager::kTriStrip, pLocatorData->m_locDrawTriangles_mirror);
-			}
+			}*/
 
 
 
@@ -3531,12 +3617,12 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 		{
 			// Draw fill
 			drawManager.setColor(fillCol);
-			drawManager.mesh(MHWRender::MUIDrawManager::kTriStrip, pLocatorData->m_locDrawTriangles);
+			drawManager.mesh(MHWRender::MUIDrawManager::kTriangles, pLocatorData->m_locDrawTriangles);
 
-			if (pLocatorData->m_mirror_x || pLocatorData->m_mirror_y || pLocatorData->m_mirror_z)
+		/*	if (pLocatorData->m_mirror_x || pLocatorData->m_mirror_y || pLocatorData->m_mirror_z)
 			{
 				drawManager.mesh(MHWRender::MUIDrawManager::kTriStrip, pLocatorData->m_locDrawTriangles_mirror);
-			}
+			}*/
 
 
 		}
@@ -3548,26 +3634,26 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 			{
 				// Draw fill
 				drawManager.setColor(fillCol);
-				drawManager.mesh(MHWRender::MUIDrawManager::kTriStrip, pLocatorData->m_locDrawTriangles);
+				drawManager.mesh(MHWRender::MUIDrawManager::kTriangles, pLocatorData->m_locDrawTriangles);
 
 
-				if (pLocatorData->m_mirror_x || pLocatorData->m_mirror_y || pLocatorData->m_mirror_z)
-				{
-					drawManager.mesh(MHWRender::MUIDrawManager::kTriStrip, pLocatorData->m_locDrawTriangles_mirror);
-				}
+				//if (pLocatorData->m_mirror_x || pLocatorData->m_mirror_y || pLocatorData->m_mirror_z)
+				//{
+				//	drawManager.mesh(MHWRender::MUIDrawManager::kTriangles, pLocatorData->m_locDrawTriangles_mirror);
+				//}
 
 
 			}
 			// Draw outline
 			drawManager.setColor(lineCol);
 			drawManager.setLineWidth(pLocatorData->m_lineWidth);
-			drawManager.mesh(MHWRender::MUIDrawManager::kLineStrip, pLocatorData->m_locDrawPoints);
+			drawManager.mesh(MHWRender::MUIDrawManager::kLines, pLocatorData->m_locDrawPoints);
 
 
-			if (pLocatorData->m_mirror_x || pLocatorData->m_mirror_y || pLocatorData->m_mirror_z)
+	/*		if (pLocatorData->m_mirror_x || pLocatorData->m_mirror_y || pLocatorData->m_mirror_z)
 			{
 				drawManager.mesh(MHWRender::MUIDrawManager::kLineStrip, pLocatorData->m_locDrawPoints_mirror);
-			}
+			}*/
 
 
 
@@ -3589,7 +3675,7 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 			{
 				// Draw fill
 				drawManager.setColor(fillCol);
-				drawManager.circle(center + offV, vU, r, true);
+				drawManager.circle(center, vU, r, true);
 
 
 				if (pLocatorData->m_mirror_x || pLocatorData->m_mirror_y || pLocatorData->m_mirror_z)
@@ -3644,10 +3730,10 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 				drawManager.mesh(MHWRender::MUIDrawManager::kTriangles, pLocatorData->m_locDrawTriangles);
 
 
-				if (pLocatorData->m_mirror_x || pLocatorData->m_mirror_y || pLocatorData->m_mirror_z)
-				{
-					drawManager.mesh(MHWRender::MUIDrawManager::kTriangles, pLocatorData->m_locDrawTriangles_mirror);
-				}
+				//if (pLocatorData->m_mirror_x || pLocatorData->m_mirror_y || pLocatorData->m_mirror_z)
+				//{
+				//	drawManager.mesh(MHWRender::MUIDrawManager::kTriangles, pLocatorData->m_locDrawTriangles_mirror);
+				//}
 
 
 
@@ -3662,13 +3748,13 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 				for (int i = 0; i < pLocatorData->m_locDrawPointsA.size(); i++)
 				{
 
-					drawManager.mesh(MHWRender::MUIDrawManager::kLineStrip, pLocatorData->m_locDrawPointsA[i]);
+					drawManager.mesh(MHWRender::MUIDrawManager::kLines, pLocatorData->m_locDrawPointsA[i]);
 
 
-					if (pLocatorData->m_mirror_x || pLocatorData->m_mirror_y || pLocatorData->m_mirror_z)
+		/*			if (pLocatorData->m_mirror_x || pLocatorData->m_mirror_y || pLocatorData->m_mirror_z)
 					{
 						drawManager.mesh(MHWRender::MUIDrawManager::kLineStrip, pLocatorData->m_locDrawPointsA_mirror[i]);
-					}
+					}*/
 
 
 
@@ -3700,10 +3786,10 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 					drawManager.point(pLocatorData->m_locDrawPointsA[i][0]);
 
 
-					if (pLocatorData->m_mirror_x || pLocatorData->m_mirror_y || pLocatorData->m_mirror_z)
+			/*		if (pLocatorData->m_mirror_x || pLocatorData->m_mirror_y || pLocatorData->m_mirror_z)
 					{
 						drawManager.point(pLocatorData->m_locDrawPointsA_mirror[i][0]);
-					}
+					}*/
 
 
 
@@ -3714,10 +3800,10 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 					drawManager.setColor(lineCol + MColor(0.0, 0.0, 1.0));
 					drawManager.point(pLocatorData->m_locDrawPointsA[i][0]);
 
-					if (pLocatorData->m_mirror_x || pLocatorData->m_mirror_y || pLocatorData->m_mirror_z)
+			/*		if (pLocatorData->m_mirror_x || pLocatorData->m_mirror_y || pLocatorData->m_mirror_z)
 					{
 						drawManager.point(pLocatorData->m_locDrawPointsA_mirror[i][0]);
-					}
+					}*/
 
 
 				}
@@ -3727,11 +3813,13 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 					drawManager.setColor(lineCol + MColor(1.0, 0.0, 0.0));
 				}
 
-				drawManager.mesh(MHWRender::MUIDrawManager::kLineStrip, pLocatorData->m_locDrawPointsA[i]);
-				if (pLocatorData->m_mirror_x || pLocatorData->m_mirror_y || pLocatorData->m_mirror_z)
+				drawManager.mesh(MHWRender::MUIDrawManager::kLines, pLocatorData->m_locDrawPointsA[i]);
+
+
+		/*		if (pLocatorData->m_mirror_x || pLocatorData->m_mirror_y || pLocatorData->m_mirror_z)
 				{
-					drawManager.mesh(MHWRender::MUIDrawManager::kLineStrip, pLocatorData->m_locDrawPointsA_mirror[i]);
-				}
+					drawManager.mesh(MHWRender::MUIDrawManager::kLines, pLocatorData->m_locDrawPointsA_mirror[i]);
+				}*/
 
 
 
@@ -3751,10 +3839,10 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 
 
 
-				if (pLocatorData->m_mirror_x || pLocatorData->m_mirror_y || pLocatorData->m_mirror_z)
-				{
-					drawManager.mesh(MHWRender::MUIDrawManager::kTriangles, pLocatorData->m_locDrawTriangles_mirror);
-				}
+				//if (pLocatorData->m_mirror_x || pLocatorData->m_mirror_y || pLocatorData->m_mirror_z)
+				//{
+				//	drawManager.mesh(MHWRender::MUIDrawManager::kTriangles, pLocatorData->m_locDrawTriangles_mirror);
+				//}
 
 
 
@@ -3769,12 +3857,12 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 			{
 
 				//drawManager.mesh(MHWRender::MUIDrawManager::kClosedLine, pLocatorData->m_locDrawPoints);
-				drawManager.mesh(MHWRender::MUIDrawManager::kLineStrip, pLocatorData->m_locDrawPointsA[i]);
+				drawManager.mesh(MHWRender::MUIDrawManager::kLines, pLocatorData->m_locDrawPointsA[i]);
 
-				if (pLocatorData->m_mirror_x || pLocatorData->m_mirror_y || pLocatorData->m_mirror_z)
+		/*		if (pLocatorData->m_mirror_x || pLocatorData->m_mirror_y || pLocatorData->m_mirror_z)
 				{
-					drawManager.mesh(MHWRender::MUIDrawManager::kLineStrip, pLocatorData->m_locDrawPointsA_mirror[i]);
-				}
+					drawManager.mesh(MHWRender::MUIDrawManager::kLines, pLocatorData->m_locDrawPointsA_mirror[i]);
+				}*/
 
 
 
@@ -3794,10 +3882,10 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 				drawManager.mesh(MHWRender::MUIDrawManager::kTriangles, pLocatorData->m_locDrawTriangles);
 
 
-				if (pLocatorData->m_mirror_x || pLocatorData->m_mirror_y || pLocatorData->m_mirror_z)
+	/*			if (pLocatorData->m_mirror_x || pLocatorData->m_mirror_y || pLocatorData->m_mirror_z)
 				{
 					drawManager.mesh(MHWRender::MUIDrawManager::kTriangles, pLocatorData->m_locDrawTriangles_mirror);
-				}
+				}*/
 
 
 
@@ -3814,15 +3902,12 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 			{
 
 				//drawManager.mesh(MHWRender::MUIDrawManager::kClosedLine, pLocatorData->m_locDrawPoints);
-				drawManager.mesh(MHWRender::MUIDrawManager::kLineStrip, pLocatorData->m_locDrawPointsA[i]);
+				drawManager.mesh(MHWRender::MUIDrawManager::kLines, pLocatorData->m_locDrawPointsA[i]);
 
-
-				if (pLocatorData->m_mirror_x || pLocatorData->m_mirror_y || pLocatorData->m_mirror_z)
+		/*		if (pLocatorData->m_mirror_x || pLocatorData->m_mirror_y || pLocatorData->m_mirror_z)
 				{
-					drawManager.mesh(MHWRender::MUIDrawManager::kLineStrip, pLocatorData->m_locDrawPointsA_mirror[i]);
-				}
-
-
+					drawManager.mesh(MHWRender::MUIDrawManager::kLines, pLocatorData->m_locDrawPointsA_mirror[i]);
+				}*/
 
 			}
 
@@ -4390,22 +4475,14 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 
 	}
 
-#if MAYA_API_VERSION > 201600
+
 	if (pLocatorData->m_drawOnTop)
 	{
-
 		drawManager.endDrawInXray();
-		drawManager.endDrawable();
 	}
-	if (!pLocatorData->m_drawOnTop)
-	{
-		drawManager.endDrawable();
-	}
-#else
 
 	drawManager.endDrawable();
 
-#endif
 
 
 
@@ -4766,13 +4843,13 @@ MStatus BaseLoc::initialize()
 	nAttr.setChannelBox(true);
 	addAttribute(aDispNum);
 
-	aDispCard = nAttr.create("displayCards", "displayCards", MFnNumericData::kBoolean);
-	nAttr.setStorable(true);
-	nAttr.setReadable(false);
-	nAttr.setDefault(false);
-	nAttr.setKeyable(true);
-	nAttr.setChannelBox(true);
-	addAttribute(aDispCard);
+	//aDispCard = nAttr.create("displayCards", "displayCards", MFnNumericData::kBoolean);
+	//nAttr.setStorable(true);
+	//nAttr.setReadable(false);
+	//nAttr.setDefault(false);
+	//nAttr.setKeyable(true);
+	//nAttr.setChannelBox(true);
+	//addAttribute(aDispCard);
 
 	aDrawOnTop = nAttr.create("drawOnTop", "drawOnTop", MFnNumericData::kBoolean);
 	nAttr.setStorable(true);
@@ -4781,6 +4858,14 @@ MStatus BaseLoc::initialize()
 	nAttr.setKeyable(true);
 	nAttr.setChannelBox(true);
 	addAttribute(aDrawOnTop);
+
+	aBillboard = nAttr.create("billBoard", "billBoard", MFnNumericData::kBoolean);
+	nAttr.setStorable(true);
+	nAttr.setReadable(false);
+	nAttr.setDefault(false);
+	nAttr.setKeyable(true);
+	nAttr.setChannelBox(true);
+	addAttribute(aBillboard);
 
 	aDispLoc = nAttr.create("displayLocator", "displayLocator", MFnNumericData::kBoolean);
 	nAttr.setStorable(true);

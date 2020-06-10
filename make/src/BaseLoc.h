@@ -123,6 +123,7 @@ public:
 	static MObject		aDispLoc;
 	static MObject		aDispLocPivot;
 	static MObject		aDrawOnTop;
+	static MObject		aBillboard;
 	static MObject		aOrient;
 
 	static MObject      aLineColor;
@@ -243,6 +244,7 @@ public:
 	bool					m_dispNum;
 	bool					m_dispLoc;
 	bool					m_drawOnTop;
+	bool					m_billboard;
 
 	bool					m_mirror_x;
 	bool					m_mirror_y;
@@ -311,11 +313,12 @@ public:
 	MColor					m_textBoxColor;
 
 	MMatrix					m_rotMatrix;
+	MMatrix					m_bilboardMatrix;
 
 	static MStringArray		m_fFontList;
 
 	//double					m_inTime;
-
+	MDagPath				m_cameraPath;
 
 	MTime					m_currentTime;
 
@@ -363,6 +366,8 @@ public:
 
 	static void draw(const MHWRender::MDrawContext& context, const MUserData* data) {};
 
+	
+
 protected:
 	MBoundingBox mCurrentBoundingBox;
 
@@ -382,7 +387,7 @@ private:
 	MPoint m_bbCorner1;
 	MPoint m_bbCorner2;
 
-	bool				m_debug;
+	bool				m_debug = false;
 
 };
 

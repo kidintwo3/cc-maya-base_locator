@@ -33,9 +33,6 @@ global proc AEBaseLocTemplate( string $nodeName )
 	editorTemplate -endLayout;
 
 	editorTemplate -beginLayout "Transforms" -collapse 0;
-	editorTemplate -addControl "mirrorX";
-	editorTemplate -addControl "mirrorY";
-	editorTemplate -addControl "mirrorZ";
 	editorTemplate -addControl "worldSpace";
 	editorTemplate -addSeparator;
 	editorTemplate -addControl "offsetX";
@@ -95,6 +92,9 @@ global proc AEBaseLocTemplate( string $nodeName )
 	editorTemplate -suppress "locatorPos";
 	editorTemplate -suppress "inPointArray";
 	editorTemplate -suppress "inTriangleArray";
+	editorTemplate -suppress "mirrorX";
+	editorTemplate -suppress "mirrorY";
+	editorTemplate -suppress "mirrorZ";
 
 	AEdependNodeTemplate $nodeName;
 

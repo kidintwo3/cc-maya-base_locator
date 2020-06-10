@@ -1,9 +1,9 @@
 //
 //  AETemplates.h
-//  baseLoc
+//  primGen
 //
-//  Created by Janos Hunyadi on 2018.07.13
-//  Copyright (c) 2018. Janos Hunyadi. All rights reserved.
+//  Created by Janos Hunyadi on 2019.07.29
+//  Copyright (c) 2019. Janos Hunyadi. All rights reserved.
 //
 
 
@@ -50,6 +50,7 @@ MStringArray mel_AETemplate()
 		"\	editorTemplate -addControl \"displayText\";\r\n"
 		"\	editorTemplate -addSeparator;\r\n"
 		"\	editorTemplate -addControl \"drawOnTop\";\r\n"
+		"\	editorTemplate -addControl \"billBoard\";\r\n"
 		"\	editorTemplate -endLayout;\r\n"
 		"\	\r\n"
 		"\	editorTemplate -beginLayout \"File presets\" -collapse 0;\r\n"
@@ -57,9 +58,6 @@ MStringArray mel_AETemplate()
 		"\	editorTemplate -endLayout;\r\n"
 		"\r\n"
 		"\	editorTemplate -beginLayout \"Transforms\" -collapse 0;\r\n"
-		"\	editorTemplate -addControl \"mirrorX\";\r\n"
-		"\	editorTemplate -addControl \"mirrorY\";\r\n"
-		"\	editorTemplate -addControl \"mirrorZ\";\r\n"
 		"\	editorTemplate -addControl \"worldSpace\";\r\n"
 		"\	editorTemplate -addSeparator;\r\n"
 		"\	editorTemplate -addControl \"offsetX\";\r\n"
@@ -119,6 +117,9 @@ MStringArray mel_AETemplate()
 		"\	editorTemplate -suppress \"locatorPos\";\r\n"
 		"\	editorTemplate -suppress \"inPointArray\";\r\n"
 		"\	editorTemplate -suppress \"inTriangleArray\";\r\n"
+		"\	editorTemplate -suppress \"mirrorX\";\r\n"
+		"\	editorTemplate -suppress \"mirrorY\";\r\n"
+		"\	editorTemplate -suppress \"mirrorZ\";\r\n"
 		"\r\n"
 		"\	AEdependNodeTemplate $nodeName;\r\n"
 		"\r\n"
@@ -369,7 +370,6 @@ MStringArray mel_AETemplate()
 
 	return s_aeTemplate_A;
 }
-
 
 MString mel_createShelf()
 {

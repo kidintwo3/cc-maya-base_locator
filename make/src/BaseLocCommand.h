@@ -43,7 +43,7 @@ public:
 	static void*			creator();
 	static MSyntax			newSyntax();
 
-	void					setResult();
+	//void					setResult();
 
 private:
 
