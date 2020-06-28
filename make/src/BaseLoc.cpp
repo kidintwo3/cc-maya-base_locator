@@ -147,6 +147,21 @@ void BaseLoc::postConstructor()
 
 }
 
+// Called before this node is evaluated by Evaluation Manager
+MStatus BaseLoc::preEvaluation(	const MDGContext& context,	const MEvaluationNode& evaluationNode)
+{
+	//if (context.isNormal())
+	//{
+	//	MStatus status;
+	//	if (evaluationNode.dirtyPlugExists(aBillboard, &status) && status)
+	//	{
+	//		MHWRender::MRenderer::setGeometryDrawDirty(thisMObject());
+	//	}
+	//}
+
+	return MStatus::kSuccess;
+}
+
 void* BaseLoc::creator()
 {
 	return new BaseLoc();
@@ -161,7 +176,7 @@ bool BaseLoc::isTransparent() const
 
 #if MAYA_API_VERSION > 201600
 
-BaseLocOverride::BaseLocOverride(const MObject & obj) : MHWRender::MPxDrawOverride(obj, BaseLocOverride::draw)
+BaseLocOverride::BaseLocOverride(const MObject & obj) :MHWRender::MPxDrawOverride{ obj, NULL, false }
 {
 	fModelEditorChangedCbId = MEventMessage::addEventCallback("modelEditorChanged", OnModelEditorChanged, this);
 	MStatus status;
@@ -172,7 +187,7 @@ BaseLocOverride::BaseLocOverride(const MObject & obj) : MHWRender::MPxDrawOverri
 
 #else
 
-BaseLocOverride::BaseLocOverride(const MObject& obj) : MHWRender::MPxDrawOverride(obj, BaseLocOverride::draw)
+BaseLocOverride::BaseLocOverride(const MObject& obj) :MHWRender::MPxDrawOverride{ obj, NULL, false }
 {
 	fModelEditorChangedCbId = MEventMessage::addEventCallback("modelEditorChanged", OnModelEditorChanged, this);
 	MStatus status;
@@ -196,11 +211,16 @@ BaseLocOverride::~BaseLocOverride()
 
 void BaseLocOverride::OnModelEditorChanged(void* clientData)
 {
-	BaseLocOverride* ovr = static_cast<BaseLocOverride*>(clientData);
+	BaseLocOverride* override = static_cast<BaseLocOverride*>(clientData);
 
-	if (ovr && ovr->fBaseLoc)
+	//// Get allways face camera
+	//MPlug p = MPlug(override->fBaseLoc->thisMObject(), BaseLoc::aBillboard);
+	//bool billboard;
+	//p.getValue(billboard);
+
+	if (override && override->fBaseLoc)
 	{
-		MHWRender::MRenderer::setGeometryDrawDirty(ovr->fBaseLoc->thisMObject());
+		MHWRender::MRenderer::setGeometryDrawDirty(override->fBaseLoc->thisMObject());
 	}
 }
 
@@ -1559,7 +1579,6 @@ MBoundingBox BaseLocOverride::boundingBox(const MDagPath& objPath, const MDagPat
 	}
 
 
-
 	MPlug p;
 
 	// Get input Locator Matricies
@@ -1582,8 +1601,6 @@ MBoundingBox BaseLocOverride::boundingBox(const MDagPath& objPath, const MDagPat
 
 	MPoint inLocA_pos = inLocA_posMat.getTranslation(MSpace::kWorld);
 	MPoint inLocB_pos = inLocB_posMat.getTranslation(MSpace::kWorld);
-
-
 
 
 	// Get allways face camera
@@ -2041,7 +2058,58 @@ MStatus BaseLocOverride::getIntArray(MFnArrayAttrsData& particleFn, const MStrin
 	return status;
 }
 
+void BaseLocOverride::load_iconLocatorData(MString& s_f_linePosValues, MString& s_f_triangleValues, MPointArray* m_line_values, MPointArray* m_triangle_values)
+{
+	m_line_values->clear();
+	m_triangle_values->clear();
 
+	MStringArray s_pointsA;
+	s_f_linePosValues.split(',', s_pointsA);
+
+	int count = 0;
+	MPoint currP;
+
+	// Line Array
+	for (int i = 0; i < s_pointsA.length(); i += 3)
+	{
+
+		if (i > s_pointsA.length())
+		{
+			break;
+		}
+
+
+		currP.x = s_pointsA[i].asDouble();
+		currP.y = s_pointsA[i + 1].asDouble();
+		currP.z = s_pointsA[i + 2].asDouble();
+		m_line_values->append(currP);
+
+	}
+
+
+	// Trinagle Array
+	MStringArray s_trianglesA;
+	s_f_triangleValues.split(',', s_trianglesA);
+
+	// reset count
+	count = 0;
+
+
+	for (int i = 0; i < s_trianglesA.length(); i += 3)
+	{
+
+		if (i > s_trianglesA.length())
+		{
+			break;
+		}
+
+
+		currP.x = s_trianglesA[i].asDouble();
+		currP.y = s_trianglesA[i + 1].asDouble();
+		currP.z = s_trianglesA[i + 2].asDouble();
+		m_triangle_values->append(currP);
+	}
+}
 
 
 // Called by Maya each time the object needs to be drawn.
@@ -2290,7 +2358,7 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 
 
 
-// Get input Locator Matricies
+		// Get input Locator Matricies
 		p = MPlug(o_BaseLocNode, BaseLoc::aInLocPosA);
 		MObject o_inlocMatA;
 		p.getValue(o_inlocMatA);
@@ -2803,7 +2871,16 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 	{
 
 
-		if (data->m_drawIconType == 0) { m_locPointsNum = 37; m_locTrianglesNum = 144; tmpA.setLength(m_locPointsNum);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(m_locCrossPoints[i][0], m_locCrossPoints[i][1], m_locCrossPoints[i][2]) * r * rM + offV, i); } }
+		/*if (data->m_drawIconType == 0) { m_locPointsNum = 37; m_locTrianglesNum = 144; tmpA.setLength(m_locPointsNum);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(m_locCrossPoints[i][0], m_locCrossPoints[i][1], m_locCrossPoints[i][2]) * r * rM + offV, i); } }*/
+
+		if (data->m_drawIconType == 0)
+		{
+			inPointArray.clear(); inTriangleArray.clear(); load_iconLocatorData(m_locCrossPoints_zz, m_locCrossTriangles_zz, &inPointArray, &inTriangleArray);
+			tmpA.clear(); m_locPointsNum = inPointArray.length(); m_locTrianglesNum = inTriangleArray.length(); tmpA.setLength(m_locPointsNum);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(inPointArray[i][0], inPointArray[i][1], inPointArray[i][2]) * r * rM + offV, i); }
+		}
+
+		//if (data->m_drawPresets == 0) { tmpA.clear(); m_locPointsNum = inPointArray.length(); m_locTrianglesNum = inTriangleArray.length(); tmpA.setLength(m_locPointsNum);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(inPointArray[i][0], inPointArray[i][1], inPointArray[i][2]) * r * rM + offV, i); } }
+
 		if (data->m_drawIconType == 1) { m_locPointsNum = 26; m_locTrianglesNum = 261; tmpA.setLength(m_locPointsNum);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(m_locBoxOpenedPoints[i][0], m_locBoxOpenedPoints[i][1], m_locBoxOpenedPoints[i][2]) * r * rM + offV, i); } }
 		if (data->m_drawIconType == 2) { m_locPointsNum = 54; m_locTrianglesNum = 417; tmpA.setLength(m_locPointsNum);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(m_locTagPoints[i][0], m_locTagPoints[i][1], m_locTagPoints[i][2]) * r * rM + offV, i); } }
 		if (data->m_drawIconType == 3) { m_locPointsNum = 36; m_locTrianglesNum = 159; tmpA.setLength(m_locPointsNum);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(m_locArrowUpPoints[i][0], m_locArrowUpPoints[i][1], m_locArrowUpPoints[i][2]) * r * rM + offV, i); } }
@@ -2843,7 +2920,7 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 
 
 		// Calculate Outline points with breaks
-		int vC = 0;
+		int vC = 1;
 		for (int i = 0; i < m_locPointsNum; i++)
 		{
 			if (tmpA[i].distanceTo(MPoint(0.0f, 0.0f, 0.0f) * r * rM + offV) == 0.0)
@@ -2852,7 +2929,10 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 			}
 		}
 
-		data->m_locDrawPointsA.resize(vC + 1);
+		data->m_locDrawPointsA.resize(vC);
+
+		//MGlobal::displayInfo(MString() + vC);
+
 
 		int vB = 0;
 
@@ -2865,12 +2945,12 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 			{
 				lastP = tmpA[i];
 
-				data->m_locDrawPointsA[vB].append(tmpA[i]);
+				data->m_locDrawPointsA[vB].append(lastP);
 
-				if (i!=0)
+		/*		if (i != 0)
 				{
 					data->m_locDrawPointsA[vB].append(lastP);
-				}
+				}*/
 
 			}
 
@@ -2879,23 +2959,32 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 				if (vB != vC)
 				{
 					vB += 1;
-			
+
 				}
 
 			}
 
 		}
 
+		//for (int i = 0; i < data->m_locDrawPointsA.size(); i++)
+		//{
+		//	for (int z = 0; z < data->m_locDrawPointsA[i].length(); z++)
+		//	{
+		//		MPoint p = data->m_locDrawPointsA[i][z];
+		//		MGlobal::displayInfo(MString() + p.x + "," + p.y + "," + p.z + " - " + i);
+		//	}
+		//}
 
+		//MGlobal::displayInfo(MString() + "----------");
 
 		// Calculate Polygons
 		for (int i = 0; i < m_locTrianglesNum; i++)
 		{
 
+			//if (data->m_drawIconType == 0) { data->m_locDrawTriangles.append(MPoint(m_locCrossTriangles[i][0] * r, m_locCrossTriangles[i][1] * r, m_locCrossTriangles[i][2] * r) * rM + offV); }
+		
+			if (data->m_drawIconType == 0) { data->m_locDrawTriangles.append(MPoint(inTriangleArray[i][0] * r, inTriangleArray[i][1] * r, inTriangleArray[i][2] * r) * rM + offV);  }
 
-
-
-			if (data->m_drawIconType == 0) { data->m_locDrawTriangles.append(MPoint(m_locCrossTriangles[i][0] * r, m_locCrossTriangles[i][1] * r, m_locCrossTriangles[i][2] * r) * rM + offV); }
 			if (data->m_drawIconType == 1) { data->m_locDrawTriangles.append(MPoint(m_locBoxOpenedTriangles[i][0] * r, m_locBoxOpenedTriangles[i][1] * r, m_locBoxOpenedTriangles[i][2] * r) * rM + offV); }
 			if (data->m_drawIconType == 2) { data->m_locDrawTriangles.append(MPoint(m_locTagTriangles[i][0] * r, m_locTagTriangles[i][1] * r, m_locTagTriangles[i][2] * r) * rM + offV); }
 			if (data->m_drawIconType == 3) { data->m_locDrawTriangles.append(MPoint(m_locArrowUpTriangles[i][0] * r, m_locArrowUpTriangles[i][1] * r, m_locArrowUpTriangles[i][2] * r) * rM + offV); }
@@ -2924,9 +3013,6 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 			if (data->m_drawIconType == 26) { data->m_locDrawTriangles.append(MPoint(m_locOrientTiangles[i][0] * r, m_locOrientTiangles[i][1] * r, m_locOrientTiangles[i][2] * r) * rM + offV); }
 
 		}
-
-
-
 
 	}
 
@@ -2957,9 +3043,6 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 		for (int i = 0; i < m_locTrianglesNum; i++)
 		{
 			data->m_locDrawTriangles.append(MPoint(inTriangleArray[i][0] * r, inTriangleArray[i][1] * r, inTriangleArray[i][2] * r) * rM + offV);
-
-
-
 		}
 
 	}
@@ -3424,6 +3507,8 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 
 	data->m_inLoc_mat = objPath.exclusiveMatrix();
 
+	data->m_locDrawPointsA.shrink_to_fit();
+
 	return data;
 }
 
@@ -3649,14 +3734,10 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 				drawManager.setColor(fillCol);
 				drawManager.mesh(MHWRender::MUIDrawManager::kTriangles, pLocatorData->m_locDrawTriangles);
 
-
 				/*		if (pLocatorData->m_mirror_x || pLocatorData->m_mirror_y || pLocatorData->m_mirror_z)
 						{
 							drawManager.mesh(MHWRender::MUIDrawManager::kTriangles, pLocatorData->m_locDrawTriangles_mirror);
 						}*/
-
-
-
 			}
 
 			// Draw outline
@@ -3670,8 +3751,6 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 
 			}
 
-
-
 			//if (pLocatorData->m_mirror_x || pLocatorData->m_mirror_y || pLocatorData->m_mirror_z)
 			//{
 			//	for (int i = 0; i < pLocatorData->m_locDrawPointsA.size(); i++)
@@ -3679,10 +3758,6 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 			//		drawManager.mesh(MHWRender::MUIDrawManager::kLines, pLocatorData->m_locDrawPointsA_mirror[i]);
 			//	}
 			//}
-
-
-
-
 
 		}
 
@@ -3834,11 +3909,11 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 
 			drawManager.setColor(lineCol + MColor(0.0, 0.0, 1.0));
 			drawManager.mesh(MHWRender::MUIDrawManager::kLines, pLocatorData->m_locDrawPointsA[1]);
-	
+
 
 			drawManager.setColor(lineCol + MColor(1.0, 0.0, 0.0));
 			drawManager.mesh(MHWRender::MUIDrawManager::kLines, pLocatorData->m_locDrawPointsA[2]);
-		
+
 		}
 
 
@@ -4168,7 +4243,7 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 
 
 
-		}
+			}
 
 			if (pLocatorData->m_debugType == 1)
 			{
@@ -4430,7 +4505,7 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 
 			}
 
-	}
+		}
 
 		if (pLocatorData->m_dispText)
 		{
@@ -4489,7 +4564,7 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 
 
 
-}
+	}
 
 
 	if (pLocatorData->m_drawOnTop)

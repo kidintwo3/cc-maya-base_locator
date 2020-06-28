@@ -33,6 +33,7 @@ using namespace std;
 //
 
 
+
 MStatus load_locatorData(MString &s_pathName, MString &s_presetName, MObject &o_baseLocNode)
 {
 
@@ -120,8 +121,6 @@ MStatus load_locatorData(MString &s_pathName, MString &s_presetName, MObject &o_
 			currP.y = s_trianglesA[i+1].asDouble();
 			currP.z = s_trianglesA[i+2].asDouble();
 			m_triangle_values_file.append(currP);
-
-
 		}
 
 		MFnDependencyNode fnDepTrg( o_baseLocNode );

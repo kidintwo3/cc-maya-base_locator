@@ -37,7 +37,7 @@ MStatus initializePlugin( MObject obj )
 
 	MStringArray aeTemplateA = mel_AETemplate();
 
-	for (int i = 0; i < aeTemplateA.length(); i++)
+	for (unsigned int i = 0; i < aeTemplateA.length(); i++)
 	{
 		MGlobal::executeCommand(aeTemplateA[i]);
 	}

@@ -45,12 +45,15 @@
 #include <maya/MUserData.h>
 #include <maya/MDrawContext.h>
 #include <maya/MHWGeometryUtilities.h>
+#include <maya/MEvaluationNode.h>
 
 #include <vector>
 #include <fstream>
 #include <sstream>
 #include <algorithm>
 #include <iomanip> // setprecision
+
+//#include "Utils.h"
 
 using namespace std;
 
@@ -74,6 +77,8 @@ public:
 	virtual void			postConstructor();
 
 	virtual MStatus   		compute( const MPlug& plug, MDataBlock& data );
+
+	MStatus preEvaluation(const MDGContext& context, const MEvaluationNode& evaluationNode) override;
 
 	virtual void            draw( M3dView & view, const MDagPath & path, M3dView::DisplayStyle style, M3dView::DisplayStatus status );
 
@@ -375,6 +380,9 @@ private:
 
 	MStatus getVectorArray(MFnArrayAttrsData &particleFn, const MString vectorName, MVectorArray &vectorArray, bool &exists);
 	MStatus getIntArray(MFnArrayAttrsData &particleFn, const MString intName, MIntArray &intArray, bool &exists);
+
+	void load_iconLocatorData(MString& s_f_linePosValues, MString& s_f_triangleValues, MPointArray* m_line_values, MPointArray* m_triangle_values);
+
 
 	BaseLocOverride(const MObject& obj);
 
