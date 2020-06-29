@@ -236,7 +236,7 @@ void BaseLocOverride::triggerRefresh(const MHWRender::MDrawContext& context, con
 		return;
 	}
 
-	if (pLocatorData->m_billboard) 
+	if (pLocatorData->m_billboard || pLocatorData->m_drawPresets == 12)
 	{
 
 		if (pLocatorData->m_dagPath.isValid())
