@@ -147,20 +147,49 @@ void BaseLoc::postConstructor()
 
 }
 
-// Called before this node is evaluated by Evaluation Manager
-MStatus BaseLoc::preEvaluation(	const MDGContext& context,	const MEvaluationNode& evaluationNode)
-{
-	//if (context.isNormal())
-	//{
-	//	MStatus status;
-	//	if (evaluationNode.dirtyPlugExists(aBillboard, &status) && status)
-	//	{
-	//		MHWRender::MRenderer::setGeometryDrawDirty(thisMObject());
-	//	}
-	//}
-
-	return MStatus::kSuccess;
-}
+//// Called before this node is evaluated by Evaluation Manager
+//MStatus BaseLoc::postEvaluation(const  MDGContext& context, const MEvaluationNode& evaluationNode, PostEvaluationType evalType)
+//{
+//	if (!context.isNormal())
+//		return MStatus::kFailure;
+//	MStatus status;
+//
+//	if (evaluationNode.dirtyPlugExists(aTime, &status) && status)
+//	{
+//		MDataBlock block = forceCache();
+//	
+//			MDataHandle inputTimeData = block.inputValue(aTime, &status);
+//			if (status)
+//			{
+//				MTime time = inputTimeData.asTime();
+//				double t = time.value();
+//				if (isBilboard)
+//				{
+//					MHWRender::MRenderer::setGeometryDrawDirty(thisMObject());
+//				}
+//			}
+//		
+//	}
+//	
+//
+//
+//	//if (context.isNormal())
+//	//{
+//	//	// The size attribute is set to affect the localScale attribute during
+//	//	// initialization, thus no need to be checked here to trigger geometry
+//	//	// change.
+//	//	MStatus status;
+//	//	if (evaluationNode.dirtyPlugExists(BaseLoc::aBillboard, &status) && status)
+//	//	{
+//	//		//// Get allways face camera
+//
+//	//		MGlobal::displayInfo("dirty");
+//
+//	//		MHWRender::MRenderer::setGeometryDrawDirty(thisMObject());
+//	//	}
+//	//}
+//	return MStatus::kSuccess;
+//}
 
 void* BaseLoc::creator()
 {
@@ -176,7 +205,7 @@ bool BaseLoc::isTransparent() const
 
 #if MAYA_API_VERSION > 201600
 
-BaseLocOverride::BaseLocOverride(const MObject & obj) :MHWRender::MPxDrawOverride{ obj, NULL, false }
+BaseLocOverride::BaseLocOverride(const MObject & obj) :MHWRender::MPxDrawOverride(obj, BaseLocOverride::triggerRefresh, false)
 {
 	fModelEditorChangedCbId = MEventMessage::addEventCallback("modelEditorChanged", OnModelEditorChanged, this);
 	MStatus status;
@@ -197,6 +226,36 @@ BaseLocOverride::BaseLocOverride(const MObject& obj) :MHWRender::MPxDrawOverride
 }
 #endif
 
+void BaseLocOverride::triggerRefresh(const MHWRender::MDrawContext& context, const MUserData* data)
+{
+	MHWRender::MStateManager* stateMgr = context.getStateManager();
+
+	BaseLocData* pLocatorData = (BaseLocData*)data;
+	if (!pLocatorData)
+	{
+		return;
+	}
+
+	if (pLocatorData->m_billboard) 
+	{
+
+		if (pLocatorData->m_dagPath.isValid())
+		{
+			MStatus status;
+			MObject o_BaseLocNode = pLocatorData->m_dagPath.node(&status);
+
+			if (status)
+			{
+				MHWRender::MRenderer::setGeometryDrawDirty(o_BaseLocNode);
+			}
+
+			
+		}
+
+		
+	}
+
+}
 
 
 BaseLocOverride::~BaseLocOverride()
@@ -212,11 +271,6 @@ BaseLocOverride::~BaseLocOverride()
 void BaseLocOverride::OnModelEditorChanged(void* clientData)
 {
 	BaseLocOverride* override = static_cast<BaseLocOverride*>(clientData);
-
-	//// Get allways face camera
-	//MPlug p = MPlug(override->fBaseLoc->thisMObject(), BaseLoc::aBillboard);
-	//bool billboard;
-	//p.getValue(billboard);
 
 	if (override && override->fBaseLoc)
 	{
@@ -1350,8 +1404,8 @@ MBoundingBox BaseLoc::boundingBox() const
 	{
 
 
-		corner1 = MPoint(-0.2, -0.145, -0.2);
-		corner2 = MPoint(0.2, 0.45, 0.8);
+		corner1 = MPoint(-0.253, -0.367, -0.46);
+		corner2 = MPoint(0.25, 1.15, 1.9);
 
 		corner1 = (corner1 * multiplier * rM) + offV;
 		corner2 = (corner2 * multiplier * rM) + offV;
@@ -1804,8 +1858,8 @@ MBoundingBox BaseLocOverride::boundingBox(const MDagPath& objPath, const MDagPat
 	{
 
 
-		corner1 = MPoint(-0.2 * scaleX, -0.145 * scaleY, -0.2 * scaleZ);
-		corner2 = MPoint(0.2 * scaleX, 0.45 * scaleY, 0.8 * scaleZ);
+		corner1 = MPoint(-0.253 * scaleX, -0.367 * scaleY, -0.46 * scaleZ);
+		corner2 = MPoint(0.25 * scaleX, 1.15 * scaleY, 1.9 * scaleZ);
 
 		corner1 = (corner1 * multiplier * rM) + offV;
 		corner2 = (corner2 * multiplier * rM) + offV;
@@ -2116,9 +2170,6 @@ void BaseLocOverride::load_iconLocatorData(MString& s_f_linePosValues, MString& 
 MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPath& cameraPath, const MHWRender::MFrameContext& frameContext, MUserData* oldData)
 {
 
-
-
-
 	// Get outside data from plugs
 	MStatus status;
 	MObject o_BaseLocNode = objPath.node(&status);
@@ -2143,6 +2194,7 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 	if (status)
 	{
 
+		data->m_dagPath = objPath;
 
 		// Get input point array
 		p = MPlug(o_BaseLocNode, BaseLoc::aInPointArray);
@@ -2872,47 +2924,103 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 
 
 		/*if (data->m_drawIconType == 0) { m_locPointsNum = 37; m_locTrianglesNum = 144; tmpA.setLength(m_locPointsNum);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(m_locCrossPoints[i][0], m_locCrossPoints[i][1], m_locCrossPoints[i][2]) * r * rM + offV, i); } }*/
-
-		if (data->m_drawIconType == 0)
+		if (data->m_drawPresets == 6) 
 		{
-			inPointArray.clear(); inTriangleArray.clear(); load_iconLocatorData(m_locCrossPoints_zz, m_locCrossTriangles_zz, &inPointArray, &inTriangleArray);
-			tmpA.clear(); m_locPointsNum = inPointArray.length(); m_locTrianglesNum = inTriangleArray.length(); tmpA.setLength(m_locPointsNum);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(inPointArray[i][0], inPointArray[i][1], inPointArray[i][2]) * r * rM + offV, i); }
+			if (data->m_drawIconType >= 0 && data->m_drawIconType <= 26)
+			{
+				inPointArray.clear();
+				inTriangleArray.clear();
+
+				MString pointDataStr, triDataStr;
+
+				if (data->m_drawIconType == 0) { pointDataStr = m_locCrossPoints;  triDataStr = m_locCrossTriangles; }
+				if (data->m_drawIconType == 1) { pointDataStr = m_locBoxOpenedPoints;  triDataStr = m_locBoxOpenedTriangles; }
+				if (data->m_drawIconType == 2) { pointDataStr = m_locTagPoints;  triDataStr = m_locTagTriangles; }
+				if (data->m_drawIconType == 3) { pointDataStr = m_locArrowUpPoints;  triDataStr = m_locArrowUpTriangles; }
+				if (data->m_drawIconType == 4) { pointDataStr = m_locHorizontalBorderPoints;  triDataStr = m_locHorizontalBorderTriangles; }
+				if (data->m_drawIconType == 5) { pointDataStr = m_locCameraPoints;  triDataStr = m_locCameraTriangles; }
+				if (data->m_drawIconType == 6) { pointDataStr = m_locClosePoints;  triDataStr = m_locCloseTriangles; }
+				if (data->m_drawIconType == 7) { pointDataStr = m_locEyePoints;  triDataStr = m_locEyeTriangles; }
+				if (data->m_drawIconType == 8) { pointDataStr = m_locFlashPoints;  triDataStr = m_locFlashTriangles; }
+				if (data->m_drawIconType == 9) { pointDataStr = m_locTshirtPoints;  triDataStr = m_locTshirtTriangles; }
+				if (data->m_drawIconType == 10) { pointDataStr = m_locLockPoints;  triDataStr = m_locLockTriangles; }
+				if (data->m_drawIconType == 11) { pointDataStr = m_locGroupPoints;  triDataStr = m_locGroupTriangles; }
+				if (data->m_drawIconType == 12) { pointDataStr = m_locClockPoints;  triDataStr = m_locClockTriangles; }
+				if (data->m_drawIconType == 13) { pointDataStr = m_locHomePoints;  triDataStr = m_locHomeTriangles; }
+				if (data->m_drawIconType == 14) { pointDataStr = m_locMalePoints;  triDataStr = m_locMaleTriangles; }
+				if (data->m_drawIconType == 15) { pointDataStr = m_locFemalePoints;  triDataStr = m_locFemaleTriangles; }
+				if (data->m_drawIconType == 16) { pointDataStr = m_locLightbulbPoints;  triDataStr = m_locLightbulbTriangles; }
+				if (data->m_drawIconType == 17) { pointDataStr = m_locRotatecounterclockwisePoints;  triDataStr = m_locRotatecounterclockwiseTriangles; }
+				if (data->m_drawIconType == 18) { pointDataStr = m_locPinetreePoints;  triDataStr = m_locPinetreeTriangles; }
+				if (data->m_drawIconType == 19) { pointDataStr = m_locHazardPoints;  triDataStr = m_locHazardTriangles; }
+				if (data->m_drawIconType == 20) { pointDataStr = m_locMovePoints;  triDataStr = m_locMoveTriangles; }
+				if (data->m_drawIconType == 21) { pointDataStr = m_locCornersPoints;  triDataStr = m_locCornersTriangles; }
+				if (data->m_drawIconType == 22) { pointDataStr = m_locDirectionPoints;  triDataStr = m_locDirectionTriangles; }
+				if (data->m_drawIconType == 23) { pointDataStr = m_locManwalkPoints;  triDataStr = m_locManwalkTriangles; }
+				if (data->m_drawIconType == 24) { pointDataStr = m_locFeetPoints;  triDataStr = m_locFeetTriangles; }
+				if (data->m_drawIconType == 25) { pointDataStr = m_locmuzzleflashPoints;  triDataStr = m_locmuzzleflashTriangles; }
+				if (data->m_drawIconType == 26) { pointDataStr = m_locOrientPoints;  triDataStr = m_locOrientTiangles; }
+
+				load_iconLocatorData(pointDataStr, triDataStr, &inPointArray, &inTriangleArray);
+
+				tmpA.clear();
+
+				m_locPointsNum = inPointArray.length();
+				m_locTrianglesNum = inTriangleArray.length();
+				tmpA.setLength(m_locPointsNum);
+
+				for (int i = 0; i < m_locPointsNum; i++)
+				{
+					tmpA.set(MPoint(inPointArray[i][0], inPointArray[i][1], inPointArray[i][2]) * r * rM + offV, i);
+				}
+			}
 		}
 
-		//if (data->m_drawPresets == 0) { tmpA.clear(); m_locPointsNum = inPointArray.length(); m_locTrianglesNum = inTriangleArray.length(); tmpA.setLength(m_locPointsNum);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(inPointArray[i][0], inPointArray[i][1], inPointArray[i][2]) * r * rM + offV, i); } }
-
-		if (data->m_drawIconType == 1) { m_locPointsNum = 26; m_locTrianglesNum = 261; tmpA.setLength(m_locPointsNum);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(m_locBoxOpenedPoints[i][0], m_locBoxOpenedPoints[i][1], m_locBoxOpenedPoints[i][2]) * r * rM + offV, i); } }
-		if (data->m_drawIconType == 2) { m_locPointsNum = 54; m_locTrianglesNum = 417; tmpA.setLength(m_locPointsNum);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(m_locTagPoints[i][0], m_locTagPoints[i][1], m_locTagPoints[i][2]) * r * rM + offV, i); } }
-		if (data->m_drawIconType == 3) { m_locPointsNum = 36; m_locTrianglesNum = 159; tmpA.setLength(m_locPointsNum);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(m_locArrowUpPoints[i][0], m_locArrowUpPoints[i][1], m_locArrowUpPoints[i][2]) * r * rM + offV, i); } }
-		if (data->m_drawIconType == 4) { m_locPointsNum = 149; m_locTrianglesNum = 336; tmpA.setLength(m_locPointsNum);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(m_locHorizontalBorderPoints[i][0], m_locHorizontalBorderPoints[i][1], m_locHorizontalBorderPoints[i][2]) * r * rM + offV, i); } }
-		if (data->m_drawIconType == 5) { m_locPointsNum = 99; m_locTrianglesNum = 678; tmpA.setLength(m_locPointsNum);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(m_locCameraPoints[i][0], m_locCameraPoints[i][1], m_locCameraPoints[i][2]) * r * rM + offV, i); } }
-		if (data->m_drawIconType == 6) { m_locPointsNum = 37; m_locTrianglesNum = 216; tmpA.setLength(m_locPointsNum);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(m_locClosePoints[i][0], m_locClosePoints[i][1], m_locClosePoints[i][2]) * r * rM + offV, i); } }
-		if (data->m_drawIconType == 7) { m_locPointsNum = 59; m_locTrianglesNum = 300; tmpA.setLength(m_locPointsNum);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(m_locEyePoints[i][0], m_locEyePoints[i][1], m_locEyePoints[i][2]) * r * rM + offV, i); } }
-		if (data->m_drawIconType == 8) { m_locPointsNum = 22; m_locTrianglesNum = 147; tmpA.setLength(m_locPointsNum);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(m_locFlashPoints[i][0], m_locFlashPoints[i][1], m_locFlashPoints[i][2]) * r * rM + offV, i); } }
-		if (data->m_drawIconType == 9) { m_locPointsNum = 44; m_locTrianglesNum = 279; tmpA.setLength(m_locPointsNum);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(m_locTshirtPoints[i][0], m_locTshirtPoints[i][1], m_locTshirtPoints[i][2]) * r * rM + offV, i); } }
-		if (data->m_drawIconType == 10) { m_locPointsNum = 51; m_locTrianglesNum = 294; tmpA.setLength(m_locPointsNum);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(m_locLockPoints[i][0], m_locLockPoints[i][1], m_locLockPoints[i][2]) * r * rM + offV, i); } }
-		if (data->m_drawIconType == 11) { m_locPointsNum = 147; m_locTrianglesNum = 870; tmpA.setLength(m_locPointsNum);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(m_locGroupPoints[i][0], m_locGroupPoints[i][1], m_locGroupPoints[i][2]) * r * rM + offV, i); } }
-		if (data->m_drawIconType == 12) { m_locPointsNum = 116; m_locTrianglesNum = 543; tmpA.setLength(m_locPointsNum);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(m_locClockPoints[i][0], m_locClockPoints[i][1], m_locClockPoints[i][2]) * r * rM + offV, i); } }
-		if (data->m_drawIconType == 13) { m_locPointsNum = 83; m_locTrianglesNum = 276; tmpA.setLength(m_locPointsNum);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(m_locHomePoints[i][0], m_locHomePoints[i][1], m_locHomePoints[i][2]) * r * rM + offV, i); } }
-		if (data->m_drawIconType == 14) { m_locPointsNum = 60; m_locTrianglesNum = 285; tmpA.setLength(m_locPointsNum);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(m_locMalePoints[i][0], m_locMalePoints[i][1], m_locMalePoints[i][2]) * r * rM + offV, i); } }
-		if (data->m_drawIconType == 15) { m_locPointsNum = 60; m_locTrianglesNum = 249; tmpA.setLength(m_locPointsNum);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(m_locFemalePoints[i][0], m_locFemalePoints[i][1], m_locFemalePoints[i][2]) * r * rM + offV, i); } }
-		if (data->m_drawIconType == 16) { m_locPointsNum = 57; m_locTrianglesNum = 246; tmpA.setLength(m_locPointsNum);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(m_locLightbulbPoints[i][0], m_locLightbulbPoints[i][1], m_locLightbulbPoints[i][2]) * r * rM + offV, i); } }
-		if (data->m_drawIconType == 17) { m_locPointsNum = 51; m_locTrianglesNum = 210; tmpA.setLength(m_locPointsNum);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(m_locRotatecounterclockwisePoints[i][0], m_locRotatecounterclockwisePoints[i][1], m_locRotatecounterclockwisePoints[i][2]) * r * rM + offV, i); } }
-		if (data->m_drawIconType == 18) { m_locPointsNum = 46; m_locTrianglesNum = 183; tmpA.setLength(m_locPointsNum);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(m_locPinetreePoints[i][0], m_locPinetreePoints[i][1], m_locPinetreePoints[i][2]) * r * rM + offV, i); } }
-		if (data->m_drawIconType == 19) { m_locPointsNum = 68; m_locTrianglesNum = 537; tmpA.setLength(m_locPointsNum);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(m_locHazardPoints[i][0], m_locHazardPoints[i][1], m_locHazardPoints[i][2]) * r * rM + offV, i); } }
-		if (data->m_drawIconType == 20) { m_locPointsNum = 53; m_locTrianglesNum = 204; tmpA.setLength(m_locPointsNum); for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(m_locMovePoints[i][0], m_locMovePoints[i][1], m_locMovePoints[i][2]) * r * rM + offV, i); } }
-		if (data->m_drawIconType == 21) { m_locPointsNum = 35; m_locTrianglesNum = 60; tmpA.setLength(m_locPointsNum);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(m_locCornersPoints[i][0], m_locCornersPoints[i][1], m_locCornersPoints[i][2]) * r * rM + offV, i); } }
-		if (data->m_drawIconType == 22) { m_locPointsNum = 35; m_locTrianglesNum = 138; tmpA.setLength(m_locPointsNum);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(m_locDirectionPoints[i][0], m_locDirectionPoints[i][1], m_locDirectionPoints[i][2]) * r * rM + offV, i); } }
-		if (data->m_drawIconType == 23) { m_locPointsNum = 108; m_locTrianglesNum = 669; tmpA.setLength(m_locPointsNum);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(m_locManwalkPoints[i][0], m_locManwalkPoints[i][1], m_locManwalkPoints[i][2]) * r * rM + offV, i); } }
-		if (data->m_drawIconType == 24) { m_locPointsNum = 48; m_locTrianglesNum = 303; tmpA.setLength(m_locPointsNum);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(m_locFeetPoints[i][0], m_locFeetPoints[i][1], m_locFeetPoints[i][2]) * r * rM + offV, i); } }
-		if (data->m_drawIconType == 25) { m_locPointsNum = 56; m_locTrianglesNum = 180; tmpA.setLength(m_locPointsNum);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(m_locmuzzleflashPoints[i][0], m_locmuzzleflashPoints[i][1], m_locmuzzleflashPoints[i][2]) * r * rM + offV, i); } }
-		if (data->m_drawIconType == 26) { m_locPointsNum = 49; m_locTrianglesNum = 138; tmpA.setLength(m_locPointsNum);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(m_locOrientPoints[i][0], m_locOrientPoints[i][1], m_locOrientPoints[i][2]) * r * rM + offV, i); } }
-
-		// camera
-		if (data->m_drawPresets == 8) { tmpA.clear(); m_locPointsNum = (sizeof(m_CameraPoints) / sizeof(float) / 3); m_locTrianglesNum = (sizeof(m_CameraTiangles) / sizeof(float) / 3); tmpA.setLength(m_locPointsNum);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(m_CameraPoints[i][0], m_CameraPoints[i][1], m_CameraPoints[i][2]) * r * rM + offV, i); } }
-
 		// box
-		if (data->m_drawPresets == 1) { tmpA.clear(); m_locPointsNum = (sizeof(m_locBoxPoints) / sizeof(float) / 3); m_locTrianglesNum = (sizeof(m_locBoxTriangles) / sizeof(float) / 3);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(m_locBoxPoints[i][0], m_locBoxPoints[i][1], m_locBoxPoints[i][2]) * r * rM + offV, i); } }
+		if (data->m_drawPresets == 1) { 
+
+			inPointArray.clear();
+			inTriangleArray.clear();
+
+			MString pointDataStr = m_locBoxPoints;  
+			MString triDataStr = m_locBoxTriangles;
+
+			load_iconLocatorData(pointDataStr, triDataStr, &inPointArray, &inTriangleArray);
+
+			tmpA.clear();
+
+			m_locPointsNum = inPointArray.length();
+			m_locTrianglesNum = inTriangleArray.length();
+			tmpA.setLength(m_locPointsNum);
+
+			for (int i = 0; i < m_locPointsNum; i++)
+			{
+				tmpA.set(MPoint(inPointArray[i][0], inPointArray[i][1], inPointArray[i][2]) * r * rM + offV, i);
+			}
+		}
+
+		// Camera
+		if (data->m_drawPresets == 8) {
+
+			inPointArray.clear();
+			inTriangleArray.clear();
+
+			MString pointDataStr = m_CameraPoints;
+			MString triDataStr = m_CameraTiangles;
+
+			load_iconLocatorData(pointDataStr, triDataStr, &inPointArray, &inTriangleArray);
+
+			tmpA.clear();
+
+			m_locPointsNum = inPointArray.length();
+			m_locTrianglesNum = inTriangleArray.length();
+			tmpA.setLength(m_locPointsNum);
+
+			for (int i = 0; i < m_locPointsNum; i++)
+			{
+				tmpA.set(MPoint(inPointArray[i][0], inPointArray[i][1], inPointArray[i][2]) * r * rM + offV, i);
+			}
+		}
 
 		// file
 		if (data->m_drawPresets == 11) { tmpA.clear(); m_locPointsNum = inPointArray.length(); m_locTrianglesNum = inTriangleArray.length(); tmpA.setLength(m_locPointsNum);  for (int i = 0; i < m_locPointsNum; i++) { tmpA.set(MPoint(inPointArray[i][0], inPointArray[i][1], inPointArray[i][2]) * r * rM + offV, i); } }
@@ -2931,8 +3039,6 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 
 		data->m_locDrawPointsA.resize(vC);
 
-		//MGlobal::displayInfo(MString() + vC);
-
 
 		int vB = 0;
 
@@ -2946,11 +3052,6 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 				lastP = tmpA[i];
 
 				data->m_locDrawPointsA[vB].append(lastP);
-
-		/*		if (i != 0)
-				{
-					data->m_locDrawPointsA[vB].append(lastP);
-				}*/
 
 			}
 
@@ -2966,75 +3067,25 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 
 		}
 
-		//for (int i = 0; i < data->m_locDrawPointsA.size(); i++)
-		//{
-		//	for (int z = 0; z < data->m_locDrawPointsA[i].length(); z++)
-		//	{
-		//		MPoint p = data->m_locDrawPointsA[i][z];
-		//		MGlobal::displayInfo(MString() + p.x + "," + p.y + "," + p.z + " - " + i);
-		//	}
-		//}
-
-		//MGlobal::displayInfo(MString() + "----------");
+		
 
 		// Calculate Polygons
 		for (int i = 0; i < m_locTrianglesNum; i++)
 		{
 
-			//if (data->m_drawIconType == 0) { data->m_locDrawTriangles.append(MPoint(m_locCrossTriangles[i][0] * r, m_locCrossTriangles[i][1] * r, m_locCrossTriangles[i][2] * r) * rM + offV); }
-		
-			if (data->m_drawIconType == 0) { data->m_locDrawTriangles.append(MPoint(inTriangleArray[i][0] * r, inTriangleArray[i][1] * r, inTriangleArray[i][2] * r) * rM + offV);  }
+			if (data->m_drawIconType >= 0 && data->m_drawIconType <= 26)
+			{
+				data->m_locDrawTriangles.append(MPoint(inTriangleArray[i][0] * r, inTriangleArray[i][1] * r, inTriangleArray[i][2] * r)* rM + offV);
+			}
 
-			if (data->m_drawIconType == 1) { data->m_locDrawTriangles.append(MPoint(m_locBoxOpenedTriangles[i][0] * r, m_locBoxOpenedTriangles[i][1] * r, m_locBoxOpenedTriangles[i][2] * r) * rM + offV); }
-			if (data->m_drawIconType == 2) { data->m_locDrawTriangles.append(MPoint(m_locTagTriangles[i][0] * r, m_locTagTriangles[i][1] * r, m_locTagTriangles[i][2] * r) * rM + offV); }
-			if (data->m_drawIconType == 3) { data->m_locDrawTriangles.append(MPoint(m_locArrowUpTriangles[i][0] * r, m_locArrowUpTriangles[i][1] * r, m_locArrowUpTriangles[i][2] * r) * rM + offV); }
-			if (data->m_drawIconType == 4) { data->m_locDrawTriangles.append(MPoint(m_locHorizontalBorderTriangles[i][0] * r, m_locHorizontalBorderTriangles[i][1] * r, m_locHorizontalBorderTriangles[i][2] * r) * rM + offV); }
-			if (data->m_drawIconType == 5) { data->m_locDrawTriangles.append(MPoint(m_locCameraTriangles[i][0] * r, m_locCameraTriangles[i][1] * r, m_locCameraTriangles[i][2] * r) * rM + offV); }
-			if (data->m_drawIconType == 6) { data->m_locDrawTriangles.append(MPoint(m_locCloseTriangles[i][0] * r, m_locCloseTriangles[i][1] * r, m_locCloseTriangles[i][2] * r) * rM + offV); }
-			if (data->m_drawIconType == 7) { data->m_locDrawTriangles.append(MPoint(m_locEyeTriangles[i][0] * r, m_locEyeTriangles[i][1] * r, m_locEyeTriangles[i][2] * r) * rM + offV); }
-			if (data->m_drawIconType == 8) { data->m_locDrawTriangles.append(MPoint(m_locFlashTriangles[i][0] * r, m_locFlashTriangles[i][1] * r, m_locFlashTriangles[i][2] * r) * rM + offV); }
-			if (data->m_drawIconType == 9) { data->m_locDrawTriangles.append(MPoint(m_locTshirtTriangles[i][0] * r, m_locTshirtTriangles[i][1] * r, m_locTshirtTriangles[i][2] * r) * rM + offV); }
-			if (data->m_drawIconType == 10) { data->m_locDrawTriangles.append(MPoint(m_locLockTriangles[i][0] * r, m_locLockTriangles[i][1] * r, m_locLockTriangles[i][2] * r) * rM + offV); }
-			if (data->m_drawIconType == 11) { data->m_locDrawTriangles.append(MPoint(m_locGroupTriangles[i][0] * r, m_locGroupTriangles[i][1] * r, m_locGroupTriangles[i][2] * r) * rM + offV); }
-			if (data->m_drawIconType == 12) { data->m_locDrawTriangles.append(MPoint(m_locClockTriangles[i][0] * r, m_locClockTriangles[i][1] * r, m_locClockTriangles[i][2] * r) * rM + offV); }
-			if (data->m_drawIconType == 13) { data->m_locDrawTriangles.append(MPoint(m_locHomeTriangles[i][0] * r, m_locHomeTriangles[i][1] * r, m_locHomeTriangles[i][2] * r) * rM + offV); }
-			if (data->m_drawIconType == 14) { data->m_locDrawTriangles.append(MPoint(m_locMaleTriangles[i][0] * r, m_locMaleTriangles[i][1] * r, m_locMaleTriangles[i][2] * r) * rM + offV); }
-			if (data->m_drawIconType == 15) { data->m_locDrawTriangles.append(MPoint(m_locFemaleTriangles[i][0] * r, m_locFemaleTriangles[i][1] * r, m_locFemaleTriangles[i][2] * r) * rM + offV); }
-			if (data->m_drawIconType == 16) { data->m_locDrawTriangles.append(MPoint(m_locLightbulbTriangles[i][0] * r, m_locLightbulbTriangles[i][1] * r, m_locLightbulbTriangles[i][2] * r) * rM + offV); }
-			if (data->m_drawIconType == 17) { data->m_locDrawTriangles.append(MPoint(m_locRotatecounterclockwiseTriangles[i][0] * r, m_locRotatecounterclockwiseTriangles[i][1] * r, m_locRotatecounterclockwiseTriangles[i][2] * r) * rM + offV); }
-			if (data->m_drawIconType == 18) { data->m_locDrawTriangles.append(MPoint(m_locPinetreeTriangles[i][0] * r, m_locPinetreeTriangles[i][1] * r, m_locPinetreeTriangles[i][2] * r) * rM + offV); }
-			if (data->m_drawIconType == 19) { data->m_locDrawTriangles.append(MPoint(m_locHazardTriangles[i][0] * r, m_locHazardTriangles[i][1] * r, m_locHazardTriangles[i][2] * r) * rM + offV); }
-			if (data->m_drawIconType == 20) { data->m_locDrawTriangles.append(MPoint(m_locMoveTriangles[i][0] * r, m_locMoveTriangles[i][1] * r, m_locMoveTriangles[i][2] * r) * rM + offV); }
-			if (data->m_drawIconType == 21) { data->m_locDrawTriangles.append(MPoint(m_locCornersTriangles[i][0] * r, m_locCornersTriangles[i][1] * r, m_locCornersTriangles[i][2] * r) * rM + offV); }
-			if (data->m_drawIconType == 22) { data->m_locDrawTriangles.append(MPoint(m_locDirectionTriangles[i][0] * r, m_locDirectionTriangles[i][1] * r, m_locDirectionTriangles[i][2] * r) * rM + offV); }
-			if (data->m_drawIconType == 23) { data->m_locDrawTriangles.append(MPoint(m_locManwalkTriangles[i][0] * r, m_locManwalkTriangles[i][1] * r, m_locManwalkTriangles[i][2] * r) * rM + offV); }
-			if (data->m_drawIconType == 24) { data->m_locDrawTriangles.append(MPoint(m_locFeetTriangles[i][0] * r, m_locFeetTriangles[i][1] * r, m_locFeetTriangles[i][2] * r) * rM + offV); }
-			if (data->m_drawIconType == 25) { data->m_locDrawTriangles.append(MPoint(m_locmuzzleflashTriangles[i][0] * r, m_locmuzzleflashTriangles[i][1] * r, m_locmuzzleflashTriangles[i][2] * r) * rM + offV); }
-			if (data->m_drawIconType == 26) { data->m_locDrawTriangles.append(MPoint(m_locOrientTiangles[i][0] * r, m_locOrientTiangles[i][1] * r, m_locOrientTiangles[i][2] * r) * rM + offV); }
 
 		}
 
 	}
 
 
-	// Camera
-	if (data->m_drawPresets == 8)
-	{
-
-		data->m_locDrawTriangles.clear();
-
-
-		for (int i = 0; i < m_locTrianglesNum; i++)
-		{
-			data->m_locDrawTriangles.append(MPoint(m_CameraTiangles[i][0] * r, m_CameraTiangles[i][1] * r, m_CameraTiangles[i][2] * r) * rM + offV);
-		}
-
-
-
-	}
-
-	// File
-	if (data->m_drawPresets == 11)
+	// File / 3D Camera / Box
+	if (data->m_drawPresets == 1 || data->m_drawPresets == 8 || data->m_drawPresets == 11)
 	{
 
 		data->m_locDrawTriangles.clear();
@@ -3110,24 +3161,9 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 	}
 
 
-	// Box
-	if (data->m_drawPresets == 1)
-	{
 
 
-
-		data->m_locDrawTriangles.clear();
-
-
-		for (int i = 0; i < m_locTrianglesNum; i++)
-		{
-			data->m_locDrawTriangles.append(MPoint(m_locBoxTriangles[i][0] * r, m_locBoxTriangles[i][1] * r, m_locBoxTriangles[i][2] * r) * rM + offV);
-
-		}
-
-
-
-	}
+	//}
 
 	// Sphere
 	if (data->m_drawPresets == 2)
@@ -4560,11 +4596,11 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 			drawManager.point(center);
 
 #endif
-		}
-
-
-
 	}
+
+
+
+}
 
 
 	if (pLocatorData->m_drawOnTop)

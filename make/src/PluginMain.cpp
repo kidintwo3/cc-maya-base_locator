@@ -18,7 +18,7 @@ MStatus initializePlugin( MObject obj )
 {
 	MStatus status;
 
-	MFnPlugin fnPlugin( obj, "Creative Case", "1.9", "Any" );
+	MFnPlugin fnPlugin( obj, "Creative Case", "1.95", "Any" );
 
 
 	MString rebuild_icons = MCommonSystemUtils::getEnv("BASELOC_REBUILD_ICONS", &status);

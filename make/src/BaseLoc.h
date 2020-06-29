@@ -78,7 +78,7 @@ public:
 
 	virtual MStatus   		compute( const MPlug& plug, MDataBlock& data );
 
-	MStatus preEvaluation(const MDGContext& context, const MEvaluationNode& evaluationNode) override;
+	//virtual MStatus         postEvaluation(const  MDGContext& context, const MEvaluationNode& evaluationNode, PostEvaluationType evalType);
 
 	virtual void            draw( M3dView & view, const MDagPath & path, M3dView::DisplayStyle style, M3dView::DisplayStatus status );
 
@@ -222,6 +222,8 @@ class BaseLocData : public MUserData
 public:
 	BaseLocData() : MUserData(false) {} // don't delete after draw
 	virtual ~BaseLocData() {}
+
+	MDagPath				m_dagPath;
 
 	MColor					m_locColor;
 	MColor					m_lineColor;
@@ -369,12 +371,16 @@ public:
 	virtual bool hasUIDrawables() const { return true; }
 	virtual void addUIDrawables( const MDagPath& objPath, MHWRender::MUIDrawManager& drawManager, const MHWRender::MFrameContext& frameContext, const MUserData* data);
 
-	static void draw(const MHWRender::MDrawContext& context, const MUserData* data) {};
+	//static void draw(const MHWRender::MDrawContext& context, const MUserData* data) {};
+	static void triggerRefresh(const MHWRender::MDrawContext& context, const MUserData* data);
 
-	
+
 
 protected:
 	MBoundingBox mCurrentBoundingBox;
+
+	MCallbackId fModelEditorChangedCbId;
+	
 
 private:
 
@@ -387,15 +393,17 @@ private:
 	BaseLocOverride(const MObject& obj);
 
 	static void OnModelEditorChanged(void *clientData);
-	MCallbackId fModelEditorChangedCbId;
+	
 
 	BaseLoc* fBaseLoc;
+	MObject m_locator;
 
 	MMatrix m_modelViewMat;
 	MPoint m_bbCorner1;
 	MPoint m_bbCorner2;
 
 	bool				m_debug = false;
+	
 
 };
 
