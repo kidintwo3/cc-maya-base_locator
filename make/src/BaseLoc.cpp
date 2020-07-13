@@ -1662,21 +1662,23 @@ MBoundingBox BaseLocOverride::boundingBox(const MDagPath& objPath, const MDagPat
 	bool billboard;
 	p.getValue(billboard);
 
-	//// Get Local position of the Shape node
-	//// Get local Pos X
-	//p = MPlug(o_BaseLocNode, BaseLoc::localPositionX);
-	//double localPosX;
-	//p.getValue(localPosX);
+	// Get Local position of the Shape node
+	// Get local Pos X
+	p = MPlug(o_BaseLocNode, BaseLoc::localPositionX);
+	double localPosX;
+	p.getValue(localPosX);
 
-	//// Get local Pos Y
-	//p = MPlug(o_BaseLocNode, BaseLoc::localPositionY);
-	//double localPosY;
-	//p.getValue(localPosY);
+	// Get local Pos Y
+	p = MPlug(o_BaseLocNode, BaseLoc::localPositionY);
+	double localPosY;
+	p.getValue(localPosY);
 
-	//// Get local Pos Z
-	//p = MPlug(o_BaseLocNode, BaseLoc::localPositionZ);
-	//double localPosZ;
-	//p.getValue(localPosZ);
+	// Get local Pos Z
+	p = MPlug(o_BaseLocNode, BaseLoc::localPositionZ);
+	double localPosZ;
+	p.getValue(localPosZ);
+
+	MPoint localOff = MPoint(localPosX, localPosY, localPosZ);
 
 	// Calculate offset Matrix
 
@@ -1812,7 +1814,7 @@ MBoundingBox BaseLocOverride::boundingBox(const MDagPath& objPath, const MDagPat
 
 	// OFFEST Vector
 	MVector offV(offsetX, offsetY, offsetZ);
-	//offV += MVector(localPosX, localPosY, localPosZ);
+	offV += MVector(localPosX, localPosY, localPosZ);
 
 
 	//corner1.x *= scaleX;
@@ -1878,8 +1880,10 @@ MBoundingBox BaseLocOverride::boundingBox(const MDagPath& objPath, const MDagPat
 		corner1 *= rM;
 		corner2 *= rM;
 
-		//corner1 += MVector(localPosX, localPosY, localPosZ);
-		//corner2 += MVector(localPosX, localPosY, localPosZ);
+
+
+		corner1 += MVector(localPosX, localPosY, localPosZ);
+		corner2 += MVector(localPosX, localPosY, localPosZ);
 
 	}
 
@@ -1893,8 +1897,8 @@ MBoundingBox BaseLocOverride::boundingBox(const MDagPath& objPath, const MDagPat
 		corner1 *= rM;
 		corner2 *= rM;
 
-		//corner1 += MVector(localPosX, localPosY, localPosZ);
-		//corner2 += MVector(localPosX, localPosY, localPosZ);
+		corner1 += MVector(localPosX, localPosY, localPosZ);
+		corner2 += MVector(localPosX, localPosY, localPosZ);
 	}
 
 	//if (dispCard)
@@ -2018,6 +2022,8 @@ MBoundingBox BaseLocOverride::boundingBox(const MDagPath& objPath, const MDagPat
 
 			}
 		}
+
+
 
 	}
 
@@ -2686,8 +2692,6 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 			{
 				data->m_textDebug = MString() + data->m_currentTime.as(MTime::kFilm);
 
-
-
 			}
 
 
@@ -3276,16 +3280,13 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 		data->m_locDrawPoints.clear();
 		data->m_locDrawTriangles.clear();
 
-		MPoint center;
-		center += MVector(data->m_offsetX, data->m_offsetY, data->m_offsetZ);
-		center *= data->m_rotMatrix;
-		center -= MVector(data->m_offsetX, data->m_offsetY, data->m_offsetZ);
-		//center += offV;
-
-
 		// Calculate rotation
 		MTransformationMatrix rM_fix;
 		rM_fix.rotateBy(MEulerRotation(0.0, 90.0 * (M_PI / 180.0), 0.0), MSpace::kObject);
+
+		//rM = rM_fix.asMatrix();
+
+	
 
 		//
 		MPoint lastL;
@@ -3297,8 +3298,9 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 			double rot = M_PI * -0.5;
 
 			MPoint circlePoint = MPoint(cos(i + rot) * (r * 0.5), sin(i + rot) * (r * 0.5), 0.0);
-			circlePoint += offV;
 			circlePoint *= rM;
+			circlePoint += offV;
+			
 			MVector circlePointVector(circlePoint);
 
 			lastL = circlePointVector;
@@ -3317,13 +3319,15 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 		{
 
 			MPoint circlePoint = MPoint(cos(i) * (r * 0.5), sin(i) * (r * 0.5), 0.0);
-			circlePoint += offV;
 			circlePoint *= rM;
+			circlePoint += offV;
+			
 			MVector circlePointVector(circlePoint);
 
 			MPoint centerP(MPoint::origin);
-			centerP += offV;
 			centerP *= rM;
+			centerP += offV;
+	
 
 			lastP = circlePointVector;
 
@@ -3339,15 +3343,17 @@ MUserData* BaseLocOverride::prepareForDraw(const MDagPath& objPath, const MDagPa
 
 
 		// root
-
-		//center + MVector(-offV.x, offV.y, offV.z)
-
-	/*	MPoint centerP(MPoint::origin);
-		centerP += MVector(0,2,0);
+		//MPoint centerP = MVector(data->m_localPosX, data->m_localPosY, data->m_localPosZ);
+		//centerP += MVector(data->m_offsetX, data->m_offsetY, data->m_offsetZ);
+		 
+		MPoint centerP = MPoint::origin;
 		centerP *= rM;
+		//centerP += MVector(data->m_offsetX, data->m_offsetY, data->m_offsetZ);
+		centerP += MVector(data->m_localPosX, data->m_localPosY, data->m_localPosZ);
 
-		data->m_locDrawPoints.append(MPoint::origin);*/
-		data->m_locDrawPoints.append(MPoint::origin);
+		//
+
+		data->m_locDrawPoints.append(centerP);
 
 	}
 
@@ -3634,7 +3640,7 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 		// Offset
 
 		MVector offV(pLocatorData->m_offsetX + pLocatorData->m_localPosX, pLocatorData->m_offsetY + pLocatorData->m_localPosY, pLocatorData->m_offsetZ + pLocatorData->m_localPosZ);
-
+		MPoint localOff(pLocatorData->m_localPosX, pLocatorData->m_localPosY, pLocatorData->m_localPosZ);
 
 		MPoint center;
 		MVector normal;
@@ -4054,7 +4060,7 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 
 			center *= pLocatorData->m_rotMatrix;
 			vU *= pLocatorData->m_rotMatrix;
-			center += offV;
+			center += localOff;
 
 			//if (pLocatorData->m_offsetX != 0.0)
 			//{
@@ -4135,7 +4141,7 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 #else
 
 			drawManager.setPointSize(5.0);
-			drawManager.point(center + offV);
+			drawManager.point(center + localOff);
 
 #endif
 
@@ -4163,13 +4169,14 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 
 			if (pLocatorData->m_debugType == 0)
 			{
-				drawManager.icon(center, "SCALE_PIVOT", 1.0);
+				drawManager.icon(center + localOff, "SCALE_PIVOT", 1.0);
 
-				pLocatorData->m_textDebug = "yolooo";
+				pLocatorData->m_textDebug = "test";
 
 				MPoint p = MPoint::origin;
+				p += localOff;
 				p *= pLocatorData->m_inLoc_mat;
-
+				
 
 				double width = (pLocatorData->m_text.length() * 5);
 				double height = pLocatorData->m_textBoxHeight;
@@ -4177,6 +4184,8 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 				double ox, oy;
 
 				frameContext.worldToViewport(p, ox, oy);
+
+				//oy += pLocatorData->m_offsetY;
 
 				double oy_off = oy + height + 40.0;
 				double oy_off_text = oy + (height * 0.5) + 40.0;
@@ -4284,10 +4293,13 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 			if (pLocatorData->m_debugType == 1)
 			{
 
-				drawManager.icon(center, "SCALE_PIVOT", 1.0);
+				drawManager.icon(center + localOff, "SCALE_PIVOT", 1.0);
 
 				MPoint p = MPoint::origin;
+				p += localOff;
 				p *= pLocatorData->m_inLoc_mat;
+				
+
 
 				double ox, oy;
 				frameContext.worldToViewport(p, ox, oy);
@@ -4304,14 +4316,16 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 			if (pLocatorData->m_debugType == 2)
 			{
 
-				drawManager.icon(center, "SCALE_PIVOT", 1.0);
+				drawManager.icon(center + localOff, "SCALE_PIVOT", 1.0);
 
 				drawManager.setFontName("Arial");
 
 
 
 				MPoint p = MPoint::origin;
+				p += localOff;
 				p *= pLocatorData->m_inLoc_mat;
+				
 
 				double ox, oy;
 				frameContext.worldToViewport(p, ox, oy);
@@ -4332,14 +4346,16 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 			// 3 Double
 			if (pLocatorData->m_debugType == 3)
 			{
-				drawManager.icon(center, "SCALE_PIVOT", 1.0);
+				drawManager.icon(center + localOff, "SCALE_PIVOT", 1.0);
 
 				drawManager.setFontName("Arial");
 
 
 
 				MPoint p = MPoint::origin;
+				p += localOff;
 				p *= pLocatorData->m_inLoc_mat;
+				
 
 				double x_off = 20;
 				double y_off = 2;
@@ -4416,10 +4432,12 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 			if (pLocatorData->m_debugType == 4)
 			{
 
-				drawManager.icon(center, "SCALE_PIVOT", 1.0);
+				drawManager.icon(center + localOff, "SCALE_PIVOT", 1.0);
 
 				MPoint p = MPoint::origin;
+				p += localOff;
 				p *= pLocatorData->m_inLoc_mat;
+				
 
 				double y_off = 80;
 				double fontsize = 15;
@@ -4501,6 +4519,7 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 
 
 							MPoint p = pLocatorData->m_inPoints[i];
+
 							double ox, oy;
 							frameContext.worldToViewport(p, ox, oy);
 
@@ -4527,7 +4546,9 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 				{
 
 					MPoint p = MPoint::origin;
+					p += localOff;
 					p *= pLocatorData->m_inLoc_mat;
+					
 
 					double ox, oy;
 					frameContext.worldToViewport(p, ox, oy);
@@ -4588,12 +4609,12 @@ void BaseLocOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDraw
 			//drawManager.icon(MPoint(0.0,0.0,0.0),"SCALE_PIVOT",1.0);
 #if MAYA_API_VERSION > 201600
 
-			drawManager.icon(center, "SCALE_PIVOT", 1.0);
+			drawManager.icon(center + localOff, "SCALE_PIVOT", 1.0);
 
 #else
 
 			drawManager.setPointSize(5.0);
-			drawManager.point(center);
+			drawManager.point(center + localOff);
 
 #endif
 	}
