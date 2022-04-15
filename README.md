@@ -1,5 +1,4 @@
-# cc-maya-base_locator
-Base locator main repo
+# BaseLocator 
 
 Description:
 
